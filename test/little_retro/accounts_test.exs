@@ -48,6 +48,17 @@ defmodule LittleRetro.AccountsTest do
     end
   end
 
+  describe "get_user/1" do
+    test "return nil if id is invalid" do
+      assert is_nil(Accounts.get_user(-1))
+    end
+
+    test "returns the user with the given id" do
+      %{id: id} = user = user_fixture()
+      assert %User{id: ^id} = Accounts.get_user(user.id)
+    end
+  end
+
   describe "register_user/1" do
     test "requires email and password to be set" do
       {:error, changeset} = Accounts.register_user(%{})

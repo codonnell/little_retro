@@ -16,6 +16,15 @@ config :little_retro, LittleRetro.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
+# Configure your database
+config :little_retro, LittleRetro.EventStore,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "little_retro_test#{System.get_env("MIX_TEST_PARTITION")}",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: System.schedulers_online() * 2
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :little_retro, LittleRetroWeb.Endpoint,

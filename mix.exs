@@ -32,6 +32,9 @@ defmodule LittleRetro.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:commanded, "~> 1.4"},
+      {:commanded_eventstore_adapter, "~> 1.4"},
+      {:typed_struct, "~> 0.3.0"},
       {:bcrypt_elixir, "~> 3.0"},
       {:phoenix, "~> 1.7.11"},
       {:phoenix_ecto, "~> 4.4"},

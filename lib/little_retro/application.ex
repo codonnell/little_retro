@@ -17,7 +17,8 @@ defmodule LittleRetro.Application do
       # Start a worker by calling: LittleRetro.Worker.start_link(arg)
       # {LittleRetro.Worker, arg},
       # Start to serve requests, typically the last entry
-      LittleRetroWeb.Endpoint
+      LittleRetroWeb.Endpoint,
+      LittleRetro.CommandedApplication
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
