@@ -17,12 +17,6 @@ defmodule LittleRetroWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", LittleRetroWeb do
-    pipe_through :browser
-
-    get "/", PageController, :home
-  end
-
   # Other scopes may use custom stacks.
   # scope "/api", LittleRetroWeb do
   #   pipe_through :api
@@ -66,8 +60,10 @@ defmodule LittleRetroWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [{LittleRetroWeb.UserAuth, :ensure_authenticated}] do
+      live "/", PageLive, :home
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+      live "/retros/:id/create_cards", RetroCreateCardsLive
     end
   end
 
