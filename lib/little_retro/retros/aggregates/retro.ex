@@ -1,8 +1,8 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
-  alias LittleRetro.Retros.Events.UserRemoved
-  alias LittleRetro.Retros.Commands.RemoveUser
-  alias LittleRetro.Retros.Events.UserAdded
-  alias LittleRetro.Retros.Commands.AddUser
+  alias LittleRetro.Retros.Events.UserRemovedByEmail
+  alias LittleRetro.Retros.Commands.RemoveUserByEmail
+  alias LittleRetro.Retros.Events.UserAddedByEmail
+  alias LittleRetro.Retros.Commands.AddUserByEmail
   alias LittleRetro.Retros.Events.RetroCreated
   alias LittleRetro.Retros.Commands.CreateRetro
   use TypedStruct
@@ -39,27 +39,27 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :retro_not_found}
   end
 
-  def execute(%__MODULE__{}, %AddUser{email: email}) when is_nil(email) do
+  def execute(%__MODULE__{}, %AddUserByEmail{email: email}) when is_nil(email) do
     {:error, :missing_email}
   end
 
-  def execute(%__MODULE__{}, %AddUser{id: id, email: email}) do
+  def execute(%__MODULE__{}, %AddUserByEmail{id: id, email: email}) do
     if email =~ ~r/\s+/ do
       {:error, :blank_email}
     else
-      %UserAdded{id: id, email: email}
+      %UserAddedByEmail{id: id, email: email}
     end
   end
 
-  def execute(%__MODULE__{}, %RemoveUser{email: email}) when is_nil(email) do
+  def execute(%__MODULE__{}, %RemoveUserByEmail{email: email}) when is_nil(email) do
     {:error, :missing_email}
   end
 
-  def execute(%__MODULE__{}, %RemoveUser{id: id, email: email}) do
+  def execute(%__MODULE__{}, %RemoveUserByEmail{id: id, email: email}) do
     if email =~ ~r/\s+/ do
       {:error, :blank_email}
     else
-      %UserRemoved{id: id, email: email}
+      %UserRemovedByEmail{id: id, email: email}
     end
   end
 
@@ -77,7 +77,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     }
   end
 
-  def apply(retro = %__MODULE__{user_emails: user_emails}, %UserAdded{email: email}) do
+  def apply(retro = %__MODULE__{user_emails: user_emails}, %UserAddedByEmail{email: email}) do
     if email in user_emails do
       retro
     else
@@ -85,7 +85,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
-  def apply(retro = %__MODULE__{user_emails: user_emails}, %UserRemoved{email: email}) do
+  def apply(retro = %__MODULE__{user_emails: user_emails}, %UserRemovedByEmail{email: email}) do
     %{retro | user_emails: Enum.reject(user_emails, &(&1 == email))}
   end
 end

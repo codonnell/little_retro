@@ -1,7 +1,7 @@
 defmodule LittleRetro.Retros do
   alias LittleRetro.Retros.Aggregates.Retro
-  alias LittleRetro.Retros.Commands.RemoveUser
-  alias LittleRetro.Retros.Commands.AddUser
+  alias LittleRetro.Retros.Commands.RemoveUserByEmail
+  alias LittleRetro.Retros.Commands.AddUserByEmail
   alias LittleRetro.Accounts
   alias LittleRetro.Accounts.User
   alias Commanded.UUID
@@ -25,14 +25,14 @@ defmodule LittleRetro.Retros do
   end
 
   def add_user(id, email) do
-    case CommandedApplication.dispatch(%AddUser{id: id, email: email}) do
+    case CommandedApplication.dispatch(%AddUserByEmail{id: id, email: email}) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
   end
 
   def remove_user(id, email) do
-    case CommandedApplication.dispatch(%RemoveUser{id: id, email: email}) do
+    case CommandedApplication.dispatch(%RemoveUserByEmail{id: id, email: email}) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end

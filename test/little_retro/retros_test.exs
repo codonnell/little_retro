@@ -1,8 +1,6 @@
 defmodule LittleRetro.RetrosTest do
-  alias LittleRetro.CommandedApplication
   alias LittleRetro.Retros.Aggregates.Retro
   alias LittleRetro.Accounts.User
-  alias LittleRetro.Accounts
   alias LittleRetro.Retros
 
   use LittleRetro.DataCase

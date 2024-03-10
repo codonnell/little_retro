@@ -1,4 +1,4 @@
-defmodule LittleRetro.Retros.Commands.AddUser do
+defmodule LittleRetro.Retros.Events.UserAddedByEmail do
   use TypedStruct
 
   typedstruct do

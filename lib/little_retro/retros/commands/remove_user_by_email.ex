@@ -1,4 +1,4 @@
-defmodule LittleRetro.Retros.Commands.RemoveUser do
+defmodule LittleRetro.Retros.Commands.RemoveUserByEmail do
   use TypedStruct
 
   typedstruct do
