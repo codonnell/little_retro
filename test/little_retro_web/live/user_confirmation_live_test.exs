@@ -52,7 +52,7 @@ defmodule LittleRetroWeb.UserConfirmationLiveTest do
       assert {:ok, conn} = result
 
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
-               "User confirmation link is invalid or it has expired"
+               "You must log in to access this page."
 
       # when logged in
       conn =
@@ -72,6 +72,7 @@ defmodule LittleRetroWeb.UserConfirmationLiveTest do
     end
 
     test "does not confirm email with invalid token", %{conn: conn, user: user} do
+      conn = log_in_user(conn, user)
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/invalid-token")
 
       {:ok, conn} =
