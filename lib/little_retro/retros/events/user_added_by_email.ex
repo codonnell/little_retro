@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.Events.UserAddedByEmail do
+  @derive Jason.Encoder
   use TypedStruct
 
   typedstruct do
