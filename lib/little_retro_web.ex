@@ -52,7 +52,8 @@ defmodule LittleRetroWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {LittleRetroWeb.Layouts, :app}
+        layout: {LittleRetroWeb.Layouts, :app},
+        container: {:div, class: "h-full"}
 
       unquote(html_helpers())
     end

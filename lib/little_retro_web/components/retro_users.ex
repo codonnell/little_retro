@@ -11,9 +11,9 @@ defmodule LittleRetroWeb.RetroUsers do
       <div>
         <.simple_form
           for={@email_form}
-          id="email_form"
+          id="email-form"
+          data-test="user-email-form"
           phx-submit="add_email"
-          phx-change="validate_email"
         >
           <.input field={@email_form[:email]} type="email" label="Email" required />
           <:actions>

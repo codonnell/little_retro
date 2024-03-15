@@ -1,4 +1,4 @@
-<div class="min-h-full">
+<div class="min-h-full flex flex-col">
   <nav class="border-b border-gray-200 bg-white">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex h-16 justify-between">
@@ -293,9 +293,9 @@
     </div>
   </nav>
 
-  <div class="py-10">
-    <main>
-      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+  <div class="py-10 grow">
+    <main class="h-screen">
+      <div class="h-screen mx-auto max-w-7xl sm:px-6 lg:px-8">
         <.flash_group flash={@flash} />
         <%= @inner_content %>
       </div>
