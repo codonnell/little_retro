@@ -15,9 +15,9 @@ defmodule LittleRetro.RetrosTest do
 
     test "creates a retro when moderator does exist" do
       %User{id: moderator_id} = user_fixture()
-      assert {:ok, id} = Retros.create_retro(moderator_id)
+      assert {:ok, retro_id} = Retros.create_retro(moderator_id)
 
-      assert %Retro{id: ^id, moderator_id: ^moderator_id} = Retros.get(id)
+      assert %Retro{retro_id: ^retro_id, moderator_id: ^moderator_id} = Retros.get(retro_id)
     end
   end
 
@@ -28,36 +28,36 @@ defmodule LittleRetro.RetrosTest do
     end
 
     test "returns error on blank email" do
-      id = retro_fixture()
-      assert {:error, :blank_email} == Retros.add_user(id, "   ")
+      retro_id = retro_fixture()
+      assert {:error, :blank_email} == Retros.add_user(retro_id, "   ")
     end
 
     test "returns error on missing email" do
-      id = retro_fixture()
-      assert {:error, :missing_email} == Retros.add_user(id, nil)
+      retro_id = retro_fixture()
+      assert {:error, :missing_email} == Retros.add_user(retro_id, nil)
     end
 
     test "adds user with proper email" do
-      id = retro_fixture()
-      assert :ok == Retros.add_user(id, "test@example.com")
+      retro_id = retro_fixture()
+      assert :ok == Retros.add_user(retro_id, "test@example.com")
 
-      assert %Retro{user_emails: ["test@example.com"]} = Retros.get(id)
+      assert %Retro{user_emails: ["test@example.com"]} = Retros.get(retro_id)
     end
 
     test "idempotently adds the same email twice" do
-      id = retro_fixture()
-      assert :ok == Retros.add_user(id, "test@example.com")
-      assert :ok == Retros.add_user(id, "test@example.com")
+      retro_id = retro_fixture()
+      assert :ok == Retros.add_user(retro_id, "test@example.com")
+      assert :ok == Retros.add_user(retro_id, "test@example.com")
 
-      assert %Retro{user_emails: ["test@example.com"]} = Retros.get(id)
+      assert %Retro{user_emails: ["test@example.com"]} = Retros.get(retro_id)
     end
   end
 
   describe "remove_user/1" do
     setup do
-      id = retro_fixture()
-      Retros.add_user(id, "test@example.com")
-      %{id: id, email: "test@example.com"}
+      retro_id = retro_fixture()
+      Retros.add_user(retro_id, "test@example.com")
+      %{retro_id: retro_id, email: "test@example.com"}
     end
 
     test "returns error on retro not found" do
@@ -65,25 +65,25 @@ defmodule LittleRetro.RetrosTest do
                Retros.remove_user(Commanded.UUID.uuid4(), "test@example.com")
     end
 
-    test "returns error on blank email", %{id: id} do
-      assert {:error, :blank_email} == Retros.remove_user(id, "   ")
+    test "returns error on blank email", %{retro_id: retro_id} do
+      assert {:error, :blank_email} == Retros.remove_user(retro_id, "   ")
     end
 
-    test "returns error on missing email", %{id: id} do
-      assert {:error, :missing_email} == Retros.remove_user(id, nil)
+    test "returns error on missing email", %{retro_id: retro_id} do
+      assert {:error, :missing_email} == Retros.remove_user(retro_id, nil)
     end
 
-    test "removes user with proper email", %{id: id, email: email} do
-      assert :ok == Retros.remove_user(id, email)
+    test "removes user with proper email", %{retro_id: retro_id, email: email} do
+      assert :ok == Retros.remove_user(retro_id, email)
 
-      assert %Retro{user_emails: []} = Retros.get(id)
+      assert %Retro{user_emails: []} = Retros.get(retro_id)
     end
 
-    test "idempotently removes the same email twice", %{id: id, email: email} do
-      assert :ok == Retros.remove_user(id, email)
-      assert :ok == Retros.remove_user(id, email)
+    test "idempotently removes the same email twice", %{retro_id: retro_id, email: email} do
+      assert :ok == Retros.remove_user(retro_id, email)
+      assert :ok == Retros.remove_user(retro_id, email)
 
-      assert %Retro{user_emails: []} = Retros.get(id)
+      assert %Retro{user_emails: []} = Retros.get(retro_id)
     end
   end
 end

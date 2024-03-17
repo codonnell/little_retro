@@ -8,7 +8,8 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
   use LittleRetroWeb, :live_view
 
   def render(assigns) do
-    is_moderator = assigns.current_user.id == assigns.retro.moderator_id
+    assigns =
+      assign(assigns, :is_moderator, assigns.current_user.id == assigns.retro.moderator_id)
 
     ~H"""
     <div class="h-screen flex flex-col">
@@ -18,7 +19,7 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
             Create Cards
           </h2>
         </div>
-        <%= if is_moderator do %>
+        <%= if @is_moderator do %>
           <div class="mt-4 flex md:ml-4 md:mt-0">
             <button
               type="button"
@@ -49,11 +50,11 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
 
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
-    retro = Retros.get(params["id"])
+    retro = Retros.get(params["retro_id"])
 
     if user.id == retro.moderator_id or user.email in retro.user_emails do
       email_changeset = Accounts.change_user_email(%User{})
-      PubSub.subscribe(LittleRetro.PubSub, "retro_users:#{retro.id}")
+      PubSub.subscribe(LittleRetro.PubSub, "retro_users:#{retro.retro_id}")
 
       {:ok,
        socket
@@ -110,7 +111,7 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
              |> Accounts.change_user_email(user_params)
              |> Ecto.Changeset.apply_action(:update) do
           {:ok, %User{email: email}} ->
-            Retros.add_user(retro.id, email)
+            Retros.add_user(retro.retro_id, email)
             %User{} |> Accounts.change_user_email() |> to_form()
 
           {:error, changeset} ->
@@ -128,7 +129,7 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
     retro = socket.assigns.retro
 
     if user.id == retro.moderator_id do
-      Retros.remove_user(socket.assigns.retro.id, email)
+      Retros.remove_user(socket.assigns.retro.retro_id, email)
       {:noreply, socket}
     else
       {:noreply, put_flash(socket, :error, "Only the moderator can add and remove users")}

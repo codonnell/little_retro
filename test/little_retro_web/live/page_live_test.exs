@@ -1,6 +1,5 @@
 defmodule LittleRetroWeb.PageLiveTest do
-  alias LittleRetro.Retros.Aggregates.Retro
-  alias LittleRetro.CommandedApplication
+  alias LittleRetro.Retros
   use LittleRetroWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
@@ -35,7 +34,7 @@ defmodule LittleRetroWeb.PageLiveTest do
             captures["id"]
         end
 
-      refute is_nil(Commanded.aggregate_state(CommandedApplication, Retro, id, 100))
+      refute is_nil(Retros.get(id))
     end
 
     test "redirects if user is not logged in", %{conn: conn} do

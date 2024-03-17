@@ -8,4 +8,12 @@
 - [x] Add commands and events for managing users
 - [x] Create modal for managing retro participants
   - [x] Make modal open/closable
-- [ ] Add page for card creation (hard-coding start/stop/continue)
+- [x] Add page for card creation (hard-coding start/stop/continue)
+- [x] Authz for create cards page
+- [ ] Users can create cards
+- [ ] Users can write text in a card
+
+## Later
+
+- [ ] Make real header
+- [ ] Make styling consistent between tailwind-ui and generated phoenix components

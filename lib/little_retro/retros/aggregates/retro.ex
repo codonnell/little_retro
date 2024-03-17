@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Aggregates.Retro.Card
+  alias LittleRetro.Retros.Aggregates.Retro.Column
   alias LittleRetro.Retros.Events.UserRemovedByEmail
   alias LittleRetro.Retros.Commands.RemoveUserByEmail
   alias LittleRetro.Retros.Events.UserAddedByEmail
@@ -8,26 +10,23 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
   use TypedStruct
 
   typedstruct do
-    field :id, String.t(), enforce: true
+    field :retro_id, String.t(), enforce: true
     field :moderator_id, integer(), enforce: true
-    field :columns, %{String.t() => %__MODULE__.Column{}}, enforce: true, default: %{}
-    field :column_order, [String.t()], enforce: true, default: []
+    field :columns, %{integer() => %Column{}}, enforce: true, default: %{}
+    field :column_order, [Card.id()], enforce: true, default: []
     field :user_emails, [String.t()], enforce: true, default: []
+    field :cards, %{integer() => %Card{}}, enforce: true, default: %{}
   end
 
-  typedstruct module: Column do
-    field :label, String.t(), enforce: true
-  end
-
-  def execute(%__MODULE__{id: nil, moderator_id: nil}, %CreateRetro{
-        id: id,
+  def execute(%__MODULE__{retro_id: nil, moderator_id: nil}, %CreateRetro{
+        retro_id: retro_id,
         moderator_id: moderator_id
       })
-      when not is_nil(id) and not is_nil(moderator_id) do
-    %RetroCreated{id: id, moderator_id: moderator_id}
+      when not is_nil(retro_id) and not is_nil(moderator_id) do
+    %RetroCreated{retro_id: retro_id, moderator_id: moderator_id}
   end
 
-  def execute(%__MODULE__{id: nil, moderator_id: nil}, %CreateRetro{}) do
+  def execute(%__MODULE__{retro_id: nil, moderator_id: nil}, %CreateRetro{}) do
     {:error, :missing_required_field}
   end
 
@@ -35,7 +34,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :retro_already_created}
   end
 
-  def execute(%__MODULE__{id: nil}, _) do
+  def execute(%__MODULE__{retro_id: nil}, _) do
     {:error, :retro_not_found}
   end
 
@@ -43,11 +42,11 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :missing_email}
   end
 
-  def execute(%__MODULE__{}, %AddUserByEmail{id: id, email: email}) do
+  def execute(%__MODULE__{}, %AddUserByEmail{retro_id: retro_id, email: email}) do
     if email =~ ~r/\s+/ do
       {:error, :blank_email}
     else
-      %UserAddedByEmail{id: id, email: email}
+      %UserAddedByEmail{retro_id: retro_id, email: email}
     end
   end
 
@@ -55,25 +54,26 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :missing_email}
   end
 
-  def execute(%__MODULE__{}, %RemoveUserByEmail{id: id, email: email}) do
+  def execute(%__MODULE__{}, %RemoveUserByEmail{retro_id: retro_id, email: email}) do
     if email =~ ~r/\s+/ do
       {:error, :blank_email}
     else
-      %UserRemovedByEmail{id: id, email: email}
+      %UserRemovedByEmail{retro_id: retro_id, email: email}
     end
   end
 
-  def apply(%__MODULE__{}, %RetroCreated{id: id, moderator_id: moderator_id}) do
+  def apply(%__MODULE__{}, %RetroCreated{retro_id: retro_id, moderator_id: moderator_id}) do
     %__MODULE__{
-      id: id,
+      retro_id: retro_id,
       moderator_id: moderator_id,
       columns: %{
-        "Start" => %__MODULE__.Column{label: "Start"},
-        "Stop" => %__MODULE__.Column{label: "Stop"},
-        "Continue" => %__MODULE__.Column{label: "Continue"}
+        0 => %Column{id: 0, label: "Start", cards: []},
+        1 => %Column{id: 1, label: "Stop", cards: []},
+        2 => %Column{id: 2, label: "Continue", cards: []}
       },
-      column_order: ["Start", "Stop", "Continue"],
-      user_emails: []
+      column_order: [0, 1, 2],
+      user_emails: [],
+      cards: %{}
     }
   end
 
