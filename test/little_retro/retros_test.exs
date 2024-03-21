@@ -1,4 +1,5 @@
 defmodule LittleRetro.RetrosTest do
+  alias LittleRetro.Retros.Aggregates.Retro.Card
   alias LittleRetro.Retros.Aggregates.Retro
   alias LittleRetro.Accounts.User
   alias LittleRetro.Retros
@@ -84,6 +85,24 @@ defmodule LittleRetro.RetrosTest do
       assert :ok == Retros.remove_user(retro_id, email)
 
       assert %Retro{user_emails: []} = Retros.get(retro_id)
+    end
+  end
+
+  describe "create_card/2" do
+    setup do
+      retro_id = retro_fixture()
+      %{retro_id: retro_id}
+    end
+
+    test "creates a card with empty text", %{retro_id: retro_id} do
+      Retros.create_card(retro_id, %{author_id: 0, column_id: 0})
+      retro = Retros.get(retro_id)
+      assert retro.cards[0] == %Card{id: 0, author_id: 0, text: ""}
+      assert retro.columns[0].cards == [0]
+    end
+
+    test "doesn't create a card in a non-existent column", %{retro_id: retro_id} do
+      assert {:error, _} = Retros.create_card(retro_id, %{author_id: 0, column_id: -1})
     end
   end
 end

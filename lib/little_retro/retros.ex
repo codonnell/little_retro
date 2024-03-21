@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.EditCardText
+  alias LittleRetro.Retros.Commands.CreateCard
   alias LittleRetro.Retros.Aggregates.Retro
   alias LittleRetro.Retros.Commands.RemoveUserByEmail
   alias LittleRetro.Retros.Commands.AddUserByEmail
@@ -35,6 +37,29 @@ defmodule LittleRetro.Retros do
 
   def remove_user(retro_id, email) do
     case CommandedApplication.dispatch(%RemoveUserByEmail{retro_id: retro_id, email: email}) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  def create_card(retro_id, %{author_id: author_id, column_id: column_id}) do
+    case CommandedApplication.dispatch(%CreateCard{
+           retro_id: retro_id,
+           author_id: author_id,
+           column_id: column_id
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  def edit_card_text(retro_id, %{id: id, author_id: author_id, text: text}) do
+    case CommandedApplication.dispatch(%EditCardText{
+           retro_id: retro_id,
+           id: id,
+           author_id: author_id,
+           text: text
+         }) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end

@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.Router do
+  alias LittleRetro.Retros.Commands.EditCardText
   alias LittleRetro.Retros.Commands.CreateCard
   alias LittleRetro.Retros.Commands.RemoveUserByEmail
   alias LittleRetro.Retros.Commands.AddUserByEmail
@@ -8,5 +9,5 @@ defmodule LittleRetro.Retros.Router do
 
   identify(Retro, by: :retro_id)
 
-  dispatch([CreateRetro, AddUserByEmail, RemoveUserByEmail, CreateCard], to: Retro)
+  dispatch([CreateRetro, AddUserByEmail, RemoveUserByEmail, CreateCard, EditCardText], to: Retro)
 end

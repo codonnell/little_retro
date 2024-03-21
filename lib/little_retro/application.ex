@@ -17,7 +17,7 @@ defmodule LittleRetro.Application do
       # Start a worker by calling: LittleRetro.Worker.start_link(arg)
       # {LittleRetro.Worker, arg},
       LittleRetro.CommandedApplication,
-      LittleRetro.Retros.EventHandlers.UserPubSub,
+      LittleRetro.Retros.EventHandlers.RetroPubSub,
       # Start to serve requests, typically the last entry
       LittleRetroWeb.Endpoint
     ]

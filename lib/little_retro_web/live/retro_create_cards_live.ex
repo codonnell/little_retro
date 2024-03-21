@@ -1,5 +1,5 @@
 defmodule LittleRetroWeb.RetroCreateCardsLive do
-  alias LittleRetro.Retros.Aggregates.Retro
+  require Logger
   alias Phoenix.PubSub
   alias LittleRetro.Accounts
   alias LittleRetro.Accounts.User
@@ -34,15 +34,43 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
       </div>
       <RetroUsers.retro_users_modal email_form={@email_form} user_emails={@retro.user_emails} />
       <div class="flex mt-8 divide-x-2 grow">
-        <div class="grow">
-          <h3 class="text-xl font-bold text-center">Start</h3>
-        </div>
-        <div class="grow">
-          <h3 class="text-xl font-bold text-center">Stop</h3>
-        </div>
-        <div class="grow">
-          <h3 class="text-xl font-bold text-center">Continue</h3>
-        </div>
+        <%= for column <- @retro.column_order |> Enum.map(& @retro.columns[&1]) do %>
+          <div class="grow">
+            <h3 class="text-xl font-bold text-center"><%= column.label %></h3>
+            <div class="text-center mt-4" phx-click="create_card" phx-value-column-id={column.id}>
+              <.icon
+                name="hero-plus-circle"
+                class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
+              />
+            </div>
+            <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
+              <%= for card <- column.cards |> Enum.reverse() |> Enum.map(& @retro.cards[&1]) do %>
+                <% is_author = card.author_id == @current_user.id %>
+                <li class="divide-y">
+                  <form phx-change="edit_card" phx-value-card-id={card.id} phx-debouce="1000">
+                    <textarea
+                      id="edit-card-textarea-#{card.id}"
+                      phx-update={
+                        if is_author do
+                          "ignore"
+                        else
+                          "replace"
+                        end
+                      }
+                      disabled={not is_author}
+                      name="text"
+                      maxlength="255"
+                      x-data="{ resize: () => { $el.style.height = '5px'; $el.style.height = $el.scrollHeight + 'px' } }"
+                      x-init="resize()"
+                      @input="resize()"
+                      class={"#{if is_author do "" else "blur-sm " end}block h-9 resize-none w-full rounded border-0 py-1.5 text-gray-900 shadow-lg ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"}
+                    ><%= card.text %></textarea>
+                  </form>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
       </div>
     </div>
     """
@@ -54,41 +82,33 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
 
     if user.id == retro.moderator_id or user.email in retro.user_emails do
       email_changeset = Accounts.change_user_email(%User{})
-      PubSub.subscribe(LittleRetro.PubSub, "retro_users:#{retro.retro_id}")
+      PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro.retro_id}")
 
       {:ok,
        socket
        |> assign(:retro, retro)
-       |> assign(:email_form, to_form(email_changeset))}
+       |> assign(:email_form, to_form(email_changeset))
+       |> assign(:latest_created_card_id, nil)}
     else
-      {:ok,
-       socket
-       |> put_flash(
-         :error,
-         "You don't have access to this retro. Please ask the moderator to add your email."
-       )
-       |> push_navigate(to: ~p"/")}
+      {:ok, redirect_unauthorized(socket)}
     end
   end
 
-  def handle_info({:user_added_by_email, email}, socket) do
-    current_user_emails = socket.assigns.retro.user_emails
-
-    user_emails =
-      if email in current_user_emails do
-        current_user_emails
-      else
-        [email | current_user_emails]
-      end
-
-    {:noreply, assign(socket, retro: %Retro{socket.assigns.retro | user_emails: user_emails})}
+  def handle_info({:retro_updated, retro}, socket) do
+    {:noreply, assign(socket, :retro, retro)}
   end
 
-  def handle_info({:user_removed_by_email, email}, socket) do
-    user_emails =
-      Enum.reject(socket.assigns.retro.user_emails, &(&1 == email))
+  def handle_info({:card_created, %{retro: retro, card_id: card_id}}, socket) do
+    socket = assign(socket, :retro, retro)
 
-    {:noreply, assign(socket, retro: %Retro{socket.assigns.retro | user_emails: user_emails})}
+    socket =
+      if retro.cards[card_id].author_id == socket.assigns.current_user.id do
+        assign(socket, :latest_created_card_id, card_id)
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   def handle_event("validate_email", %{"user" => user_params}, socket) do
@@ -134,5 +154,56 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
     else
       {:noreply, put_flash(socket, :error, "Only the moderator can add and remove users")}
     end
+  end
+
+  def handle_event("create_card", %{"column-id" => column_id}, socket) do
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id or user.email in retro.user_emails do
+      case Retros.create_card(retro.retro_id, %{
+             author_id: user.id,
+             column_id: String.to_integer(column_id)
+           }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      {:noreply, socket}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+  end
+
+  def handle_event("edit_card", %{"card-id" => card_id, "text" => text}, socket) do
+    card_id = String.to_integer(card_id)
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id or user.email in retro.user_emails do
+      case Retros.edit_card_text(retro.retro_id, %{
+             id: card_id,
+             author_id: user.id,
+             text: text
+           }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      {:noreply, socket}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+
+    {:noreply, socket}
+  end
+
+  defp redirect_unauthorized(socket) do
+    socket
+    |> put_flash(
+      :error,
+      "You don't have access to this retro. Please ask the moderator to add your email."
+    )
+    |> push_navigate(to: ~p"/")
   end
 end

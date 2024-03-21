@@ -1,4 +1,8 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Events.CardTextEdited
+  alias LittleRetro.Retros.Commands.EditCardText
+  alias LittleRetro.Retros.Events.CardCreated
+  alias LittleRetro.Retros.Commands.CreateCard
   alias LittleRetro.Retros.Aggregates.Retro.Card
   alias LittleRetro.Retros.Aggregates.Retro.Column
   alias LittleRetro.Retros.Events.UserRemovedByEmail
@@ -13,9 +17,10 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     field :retro_id, String.t(), enforce: true
     field :moderator_id, integer(), enforce: true
     field :columns, %{integer() => %Column{}}, enforce: true, default: %{}
-    field :column_order, [Card.id()], enforce: true, default: []
+    field :column_order, [Column.id()], enforce: true, default: []
     field :user_emails, [String.t()], enforce: true, default: []
     field :cards, %{integer() => %Card{}}, enforce: true, default: %{}
+    field :phase, :create_cards | :group_cards | :vote | :discussion, enforce: true
   end
 
   def execute(%__MODULE__{retro_id: nil, moderator_id: nil}, %CreateRetro{
@@ -62,9 +67,44 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
+  def execute(%__MODULE__{phase: :create_cards, columns: columns, cards: cards}, %CreateCard{
+        retro_id: retro_id,
+        column_id: column_id,
+        author_id: author_id
+      }) do
+    if not Map.has_key?(columns, column_id) do
+      {:error, :column_not_found}
+    else
+      card_id = (cards |> Map.keys() |> Enum.max(&>=/2, fn -> -1 end)) + 1
+      %CardCreated{retro_id: retro_id, column_id: column_id, author_id: author_id, id: card_id}
+    end
+  end
+
+  def execute(%__MODULE__{}, %CreateCard{}) do
+    {:error, :incorrect_phase}
+  end
+
+  def execute(%__MODULE__{moderator_id: moderator_id, cards: cards}, %EditCardText{
+        id: id,
+        text: text,
+        author_id: author_id,
+        retro_id: retro_id
+      }) do
+    cond do
+      author_id != moderator_id and author_id != cards[id].author_id -> {:error, :unauthorized}
+      String.length(text) > 255 -> {:error, :card_text_too_long}
+      true -> %CardTextEdited{id: id, author_id: author_id, text: text, retro_id: retro_id}
+    end
+  end
+
+  def execute(%__MODULE__{}, _command) do
+    {:error, :unrecognized_command}
+  end
+
   def apply(%__MODULE__{}, %RetroCreated{retro_id: retro_id, moderator_id: moderator_id}) do
     %__MODULE__{
       retro_id: retro_id,
+      phase: :create_cards,
       moderator_id: moderator_id,
       columns: %{
         0 => %Column{id: 0, label: "Start", cards: []},
@@ -87,5 +127,24 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
 
   def apply(retro = %__MODULE__{user_emails: user_emails}, %UserRemovedByEmail{email: email}) do
     %{retro | user_emails: Enum.reject(user_emails, &(&1 == email))}
+  end
+
+  def apply(retro = %__MODULE__{columns: columns, cards: cards}, %CardCreated{
+        id: id,
+        author_id: author_id,
+        column_id: column_id
+      }) do
+    columns =
+      update_in(columns, [Access.key!(column_id), Access.key!(:cards)], fn cards ->
+        [id | cards]
+      end)
+
+    card = %Card{id: id, author_id: author_id, text: ""}
+
+    %{retro | columns: columns, cards: Map.put(cards, id, card)}
+  end
+
+  def apply(retro = %__MODULE__{}, %CardTextEdited{id: id, text: text}) do
+    put_in(retro, [Access.key!(:cards), Access.key!(id), Access.key!(:text)], text)
   end
 end
