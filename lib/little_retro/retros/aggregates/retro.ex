@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Events.CardDeleted
+  alias LittleRetro.Retros.Commands.DeleteCardById
   alias LittleRetro.Retros.Events.CardTextEdited
   alias LittleRetro.Retros.Commands.EditCardText
   alias LittleRetro.Retros.Events.CardCreated
@@ -97,6 +99,32 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
+  def execute(retro = %__MODULE__{}, %DeleteCardById{
+        retro_id: retro_id,
+        id: id,
+        author_id: author_id,
+        column_id: column_id
+      }) do
+    card = retro.cards[id]
+
+    cond do
+      is_nil(card) ->
+        {:error, :card_not_found}
+
+      card.author_id != author_id and retro.moderator_id != author_id ->
+        {:error, :unauthorized}
+
+      not Map.has_key?(retro.columns, column_id) ->
+        {:error, :column_not_found}
+
+      id not in retro.columns[column_id].cards ->
+        {:error, :card_not_in_column}
+
+      true ->
+        %CardDeleted{id: id, author_id: author_id, column_id: column_id, retro_id: retro_id}
+    end
+  end
+
   def execute(%__MODULE__{}, _command) do
     {:error, :unrecognized_command}
   end
@@ -146,5 +174,13 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
 
   def apply(retro = %__MODULE__{}, %CardTextEdited{id: id, text: text}) do
     put_in(retro, [Access.key!(:cards), Access.key!(id), Access.key!(:text)], text)
+  end
+
+  def apply(retro = %__MODULE__{}, %CardDeleted{id: id, column_id: column_id}) do
+    retro
+    |> update_in([Access.key!(:cards)], fn cards -> Map.delete(cards, id) end)
+    |> update_in([Access.key!(:columns), Access.key!(column_id), Access.key!(:cards)], fn cards ->
+      Enum.filter(cards, fn card_id -> card_id != id end)
+    end)
   end
 end

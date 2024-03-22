@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.DeleteCardById
   alias LittleRetro.Retros.Commands.EditCardText
   alias LittleRetro.Retros.Commands.CreateCard
   alias LittleRetro.Retros.Aggregates.Retro
@@ -59,6 +60,18 @@ defmodule LittleRetro.Retros do
            id: id,
            author_id: author_id,
            text: text
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  def delete_card_by_id(retro_id, %{id: id, author_id: author_id, column_id: column_id}) do
+    case CommandedApplication.dispatch(%DeleteCardById{
+           id: id,
+           author_id: author_id,
+           column_id: column_id,
+           retro_id: retro_id
          }) do
       {:error, err} -> {:error, err}
       _ -> :ok

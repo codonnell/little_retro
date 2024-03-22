@@ -15,7 +15,10 @@
 - [x] Users can write text in a card
   - [ ] Tests for card editing domain
   - [ ] Tests for card editing in liveview
-- [ ] Users can delete cards
+  - [ ] After a user is removed, they are redirected from the liveview if they try to do an action
+- [x] Users can delete cards
+  - [ ] Tests for card deletion domain
+  - [ ] Tests for card deletion in liveview
 - [x] Other users' cards are hidden
 
 ## Later

@@ -48,23 +48,37 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
                 <% is_author = card.author_id == @current_user.id %>
                 <li class="divide-y">
                   <form phx-change="edit_card" phx-value-card-id={card.id} phx-debouce="1000">
-                    <textarea
-                      id="edit-card-textarea-#{card.id}"
-                      phx-update={
-                        if is_author do
-                          "ignore"
-                        else
-                          "replace"
-                        end
-                      }
-                      disabled={not is_author}
-                      name="text"
-                      maxlength="255"
-                      x-data="{ resize: () => { $el.style.height = '5px'; $el.style.height = $el.scrollHeight + 'px' } }"
-                      x-init="resize()"
-                      @input="resize()"
-                      class={"#{if is_author do "" else "blur-sm " end}block h-9 resize-none w-full rounded border-0 py-1.5 text-gray-900 shadow-lg ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"}
-                    ><%= card.text %></textarea>
+                    <span class="relative">
+                      <textarea
+                        id={"edit-card-textarea-#{card.id}"}
+                        phx-update={
+                          if is_author do
+                            "ignore"
+                          else
+                            "replace"
+                          end
+                        }
+                        disabled={not is_author}
+                        name="text"
+                        maxlength="255"
+                        x-data="{ resize: () => { $el.style.height = '5px'; $el.style.height = $el.scrollHeight + 'px' } }"
+                        x-init="resize()"
+                        @input="resize()"
+                        class={"#{if is_author do "" else "blur-sm " end}block h-9 resize-none w-full rounded border-0 py-1.5 text-gray-900 shadow-lg ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"}
+                      ><%= card.text %></textarea>
+                      <%= if is_author do %>
+                        <span
+                          phx-click="delete_card_by_id"
+                          phx-value-card-id={card.id}
+                          phx-value-column-id={column.id}
+                        >
+                          <.icon
+                            name="hero-trash"
+                            class="absolute h-4 w-4 top-0.5 right-0.5 text-red-200 cursor-pointer hover:text-red-400"
+                          />
+                        </span>
+                      <% end %>
+                    </span>
                   </form>
                 </li>
               <% end %>
@@ -185,6 +199,30 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
              id: card_id,
              author_id: user.id,
              text: text
+           }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      {:noreply, socket}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("delete_card_by_id", %{"card-id" => card_id, "column-id" => column_id}, socket) do
+    card_id = String.to_integer(card_id)
+    column_id = String.to_integer(column_id)
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id or user.email in retro.user_emails do
+      case Retros.delete_card_by_id(retro.retro_id, %{
+             id: card_id,
+             author_id: user.id,
+             column_id: column_id
            }) do
         {:error, err} -> Logger.error(err)
         _ -> nil

@@ -25,7 +25,7 @@ We use Phoenix PubSub to distribute live updates to all users actively on the re
 ### Voting Phase
 
 * Users can allocate a certain number of votes on cards
-* Users cannot see what votes have been cast
+* Users cannot see what votes other users have cast
 
 ### Discussion Phase
 
