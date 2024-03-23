@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Events.PhaseChanged
+  alias LittleRetro.Retros.Commands.ChangePhase
   alias LittleRetro.Retros.Events.CardDeleted
   alias LittleRetro.Retros.Commands.DeleteCardById
   alias LittleRetro.Retros.Events.CardTextEdited
@@ -15,14 +17,17 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
   alias LittleRetro.Retros.Commands.CreateRetro
   use TypedStruct
 
+  @type phase :: :create_cards | :group_cards | :vote | :discussion | :complete
+
   typedstruct do
     field :retro_id, String.t(), enforce: true
     field :moderator_id, integer(), enforce: true
-    field :columns, %{integer() => %Column{}}, enforce: true, default: %{}
+    field :columns, %{Column.id() => %Column{}}, enforce: true, default: %{}
     field :column_order, [Column.id()], enforce: true, default: []
     field :user_emails, [String.t()], enforce: true, default: []
-    field :cards, %{integer() => %Card{}}, enforce: true, default: %{}
-    field :phase, :create_cards | :group_cards | :vote | :discussion, enforce: true
+    field :cards, %{Card.id() => %Card{}}, enforce: true, default: %{}
+    field :groups, %{Card.id() => %{cards: [Card.id()]}}, enforce: true, default: %{}
+    field :phase, phase(), enforce: true
   end
 
   def execute(%__MODULE__{retro_id: nil, moderator_id: nil}, %CreateRetro{
@@ -126,6 +131,18 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
+  def execute(retro = %__MODULE__{phase: :create_cards}, %ChangePhase{
+        retro_id: retro_id,
+        to: :group_cards,
+        user_id: user_id
+      }) do
+    if retro.moderator_id == user_id do
+      %PhaseChanged{retro_id: retro_id, from: :create_cards, to: :group_cards, user_id: user_id}
+    else
+      {:error, :unauthorized}
+    end
+  end
+
   def execute(%__MODULE__{}, _command) do
     {:error, :unrecognized_command}
   end
@@ -142,7 +159,8 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       },
       column_order: [0, 1, 2],
       user_emails: [],
-      cards: %{}
+      cards: %{},
+      groups: %{}
     }
   end
 
@@ -183,5 +201,9 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     |> update_in([Access.key!(:columns), Access.key!(column_id), Access.key!(:cards)], fn cards ->
       Enum.filter(cards, fn card_id -> card_id != id end)
     end)
+  end
+
+  def apply(retro = %__MODULE__{}, %PhaseChanged{to: phase}) do
+    %__MODULE__{retro | phase: phase}
   end
 end

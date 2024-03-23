@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.ChangePhase
   alias LittleRetro.Retros.Commands.DeleteCardById
   alias LittleRetro.Retros.Commands.EditCardText
   alias LittleRetro.Retros.Commands.CreateCard
@@ -77,6 +78,19 @@ defmodule LittleRetro.Retros do
            author_id: author_id,
            column_id: column_id,
            retro_id: retro_id
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  @spec change_phase(retro_id :: binary(), %{phase: Retro.phase(), user_id: integer()}) ::
+          :ok | {:error, atom()}
+  def change_phase(retro_id, %{phase: phase, user_id: user_id}) do
+    case CommandedApplication.dispatch(%ChangePhase{
+           retro_id: retro_id,
+           to: phase,
+           user_id: user_id
          }) do
       {:error, err} -> {:error, err}
       _ -> :ok

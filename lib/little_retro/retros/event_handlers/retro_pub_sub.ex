@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
+  alias LittleRetro.Retros.Events.PhaseChanged
   alias LittleRetro.Retros.Events.CardDeleted
   alias LittleRetro.Retros.Events.CardTextEdited
   alias LittleRetro.Retros.Events.CardCreated
@@ -31,6 +32,10 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
 
   def handle(%CardDeleted{retro_id: retro_id}, _metadata) do
     broadcast_retro(retro_id)
+  end
+
+  def handle(%PhaseChanged{retro_id: retro_id, to: to}, _metadata) do
+    broadcast(retro_id, {:phase_changed, %{retro: Retros.get(retro_id), to: to}})
   end
 
   defp broadcast_retro(retro_id) do

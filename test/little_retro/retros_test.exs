@@ -169,4 +169,18 @@ defmodule LittleRetro.RetrosTest do
       assert {:error, :card_not_in_column} ==
                Retros.delete_card_by_id(retro_id, %{id: 0, author_id: user.id, column_id: 1})
     end
+  end
+
+  describe "change_phase/2" do
+    setup do
+      user = user_fixture()
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "can change phase from create cards to group cards", %{retro_id: retro_id, user: user} do
+      Retros.change_phase(retro_id, %{phase: :group_cards, user_id: user.id})
+      assert %Retro{phase: :group_cards} = Retros.get(retro_id)
+    end
+  end
 end

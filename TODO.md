@@ -20,6 +20,10 @@
   - [x] Tests for card deletion in liveview
 - [x] Other users' cards are hidden
 - [x] Fix "Attempting to reconnect" in liveview tests
+- [x] Transition to grouping phase
+- [ ] Grouping cards
+  - [ ] Grouping domain functions
+  - [ ] Grouping UI
 
 ## Later
 
