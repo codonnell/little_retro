@@ -13,6 +13,7 @@ defmodule LittleRetroWeb.RetroComponents do
           <% selected = phase[:id] == @phase %>
           <div
             class={"py-3 px-6 grow text-center border-white rounded-t-md cursor-pointer transition ease-in-out #{if selected do "bg-slate-100" else "bg-slate-300 hover:bg-slate-200" end}"}
+            data-test={"header-tab-#{phase[:id]}"}
             phx-click="change_phase"
             phx-value-to={phase[:id]}
           >

@@ -143,10 +143,39 @@ defmodule LittleRetroWeb.RetroLiveTest do
     end
   end
 
+  describe "change phase" do
+    test "moderator can change phase", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("header-tab-group_cards") |> render_click()
+
+      assert :group_cards == Retros.get(retro_id).phase
+    end
+
+    test "non-moderator cannot change phase", %{conn: conn, user: user} do
+      moderator = user_fixture()
+      {:ok, retro_id} = Retros.create_retro(moderator.id)
+      Retros.add_user(retro_id, user.email)
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("header-tab-group_cards") |> render_click()
+
+      assert view |> data_test("flash-group") |> render() =~
+               "Only the moderator can change phase"
+
+      assert :create_cards == Retros.get(retro_id).phase
+    end
+  end
+
   defp wait_for(view, msg) do
     # Ensure pubsub message has been broadcast
     assert_receive {^msg, _}
     # Send message to liveview process to ensure liveview has processed pubsub message
     _ = :sys.get_state(view.pid)
+  end
+
+  defp data_test(view, value) do
+    element(view, "[data-test=\"#{value}\"]")
   end
 end

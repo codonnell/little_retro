@@ -255,7 +255,7 @@ defmodule LittleRetroWeb.RetroLive do
        )
        |> assign(:retro, retro)}
     else
-      {:noreply, put_flash(socket, :error, "Only the moderator can change phase")}
+      {:noreply, put_flash(socket, :error, "Only the moderator can change phase.")}
     end
   end
 
