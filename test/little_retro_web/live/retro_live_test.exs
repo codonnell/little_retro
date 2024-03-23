@@ -21,12 +21,12 @@ defmodule LittleRetroWeb.RetroLiveTest do
         |> live(~p"/retros/#{retro_id}")
 
       view
-      |> form("[data-test=user-email-form]")
+      |> form(data_test_sel("user-email-form"))
       |> render_submit(%{user: %{email: email}})
 
       assert has_element?(
                view,
-               "[data-test=\"user-email-list-item-#{email}\"]",
+               data_test_sel("user-email-list-item-#{email}"),
                "foo@example.com"
              )
     end
@@ -43,7 +43,7 @@ defmodule LittleRetroWeb.RetroLiveTest do
         |> live(~p"/retros/#{retro_id}")
 
       assert view
-             |> form("[data-test=user-email-form]")
+             |> form(data_test_sel("user-email-form"))
              |> render_submit(%{user: %{email: email}}) =~
                "Only the moderator can add and remove users"
     end
@@ -61,10 +61,10 @@ defmodule LittleRetroWeb.RetroLiveTest do
         |> live(~p"/retros/#{retro_id}")
 
       view
-      |> element("[data-test=\"remove-user-email-#{email}\"]")
+      |> data_test("remove-user-email-#{email}")
       |> render_click()
 
-      refute has_element?(view, "[data-test=\"user-email-list-item-#{email}\"]")
+      refute has_element?(view, data_test_sel("user-email-list-item-#{email}"))
     end
 
     test "non-moderator cannot remove user by email", %{conn: conn, user: user} do
@@ -80,7 +80,7 @@ defmodule LittleRetroWeb.RetroLiveTest do
         |> live(~p"/retros/#{retro_id}")
 
       assert view
-             |> element("[data-test=\"remove-user-email-#{email}\"]")
+             |> data_test("remove-user-email-#{email}")
              |> render_click() =~
                "Only the moderator can add and remove users"
     end
@@ -96,10 +96,10 @@ defmodule LittleRetroWeb.RetroLiveTest do
         |> live(~p"/retros/#{retro_id}")
 
       view
-      |> element("[data-test=create-card-column-0]")
+      |> data_test("create-card-column-0")
       |> render_click()
 
-      assert has_element?(view, "[data-test=card-list-item-0]")
+      assert has_element?(view, data_test_sel("card-list-item-0"))
     end
   end
 
@@ -121,12 +121,12 @@ defmodule LittleRetroWeb.RetroLiveTest do
       PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro_id}")
 
       pub_view
-      |> element("[data-test=\"edit-card-form-0\"]")
+      |> data_test("edit-card-form-0")
       |> render_change(%{"card-id" => 0, "text" => "Hello World"})
 
       wait_for(sub_view, :retro_updated)
 
-      assert sub_view |> element("[data-test=edit-card-textarea-0]") |> render =~ "Hello World"
+      assert sub_view |> data_test("edit-card-textarea-0") |> render =~ "Hello World"
     end
   end
 
@@ -137,7 +137,7 @@ defmodule LittleRetroWeb.RetroLiveTest do
 
       {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
 
-      view |> element("[data-test=\"delete-card-button-0\"]") |> render_click()
+      view |> data_test("delete-card-button-0") |> render_click()
 
       refute has_element?(view, "#edit-card-form-0")
     end
@@ -175,7 +175,11 @@ defmodule LittleRetroWeb.RetroLiveTest do
     _ = :sys.get_state(view.pid)
   end
 
+  defp data_test_sel(value) do
+    "[data-test=\"#{value}\"]"
+  end
+
   defp data_test(view, value) do
-    element(view, "[data-test=\"#{value}\"]")
+    element(view, data_test_sel(value))
   end
 end
