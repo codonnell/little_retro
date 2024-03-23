@@ -63,7 +63,7 @@ defmodule LittleRetroWeb.Router do
       live "/", PageLive, :home
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-      live "/retros/:retro_id/create_cards", RetroCreateCardsLive
+      live "/retros/:retro_id", RetroLive
     end
   end
 

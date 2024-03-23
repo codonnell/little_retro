@@ -12,8 +12,34 @@ defmodule LittleRetro.Retros do
   alias LittleRetro.Retros.Commands.CreateRetro
   alias LittleRetro.CommandedApplication
 
+  @phases [
+    %{
+      id: :create_cards,
+      label: "Create"
+    },
+    %{
+      id: :group_cards,
+      label: "Group"
+    },
+    %{
+      id: :vote,
+      label: "Vote"
+    },
+    %{
+      id: :discussion,
+      label: "Discuss"
+    }
+  ]
+
   def get(retro_id, timeout \\ 5000) do
     Commanded.aggregate_state(CommandedApplication, Retro, retro_id, timeout)
+  end
+
+  @type phase :: %{id: Retro.phase(), label: String.t()}
+
+  @spec phases() :: [phase()]
+  def phases() do
+    @phases
   end
 
   def create_retro(moderator_id) do

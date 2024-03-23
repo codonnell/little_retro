@@ -1,4 +1,4 @@
-defmodule LittleRetroWeb.CreateCardsLiveTest do
+defmodule LittleRetroWeb.RetroLiveTest do
   alias Phoenix.PubSub
   alias LittleRetro.Retros
   use LittleRetroWeb.ConnCase, async: true
@@ -18,7 +18,7 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
       {:ok, view, _html} =
         conn
         |> log_in_user(user)
-        |> live(~p"/retros/#{retro_id}/create_cards")
+        |> live(~p"/retros/#{retro_id}")
 
       view
       |> form("[data-test=user-email-form]")
@@ -40,7 +40,7 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
       {:ok, view, _html} =
         conn
         |> log_in_user(user)
-        |> live(~p"/retros/#{retro_id}/create_cards")
+        |> live(~p"/retros/#{retro_id}")
 
       assert view
              |> form("[data-test=user-email-form]")
@@ -58,7 +58,7 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
       {:ok, view, _html} =
         conn
         |> log_in_user(user)
-        |> live(~p"/retros/#{retro_id}/create_cards")
+        |> live(~p"/retros/#{retro_id}")
 
       view
       |> element("[data-test=\"remove-user-email-#{email}\"]")
@@ -77,7 +77,7 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
       {:ok, view, _html} =
         conn
         |> log_in_user(user)
-        |> live(~p"/retros/#{retro_id}/create_cards")
+        |> live(~p"/retros/#{retro_id}")
 
       assert view
              |> element("[data-test=\"remove-user-email-#{email}\"]")
@@ -93,7 +93,7 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
       {:ok, view, _html} =
         conn
         |> log_in_user(user)
-        |> live(~p"/retros/#{retro_id}/create_cards")
+        |> live(~p"/retros/#{retro_id}")
 
       view
       |> element("[data-test=create-card-column-0]")
@@ -113,10 +113,10 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
       Retros.create_card(retro_id, %{author_id: pub_user.id, column_id: 0})
 
       {:ok, pub_view, _html} =
-        pub_conn |> log_in_user(pub_user) |> live(~p"/retros/#{retro_id}/create_cards")
+        pub_conn |> log_in_user(pub_user) |> live(~p"/retros/#{retro_id}")
 
       {:ok, sub_view, _html} =
-        sub_conn |> log_in_user(sub_user) |> live(~p"/retros/#{retro_id}/create_cards")
+        sub_conn |> log_in_user(sub_user) |> live(~p"/retros/#{retro_id}")
 
       PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro_id}")
 
@@ -135,7 +135,7 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
       {:ok, retro_id} = Retros.create_retro(user.id)
       Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
 
-      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}/create_cards")
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
 
       view |> element("[data-test=\"delete-card-button-0\"]") |> render_click()
 

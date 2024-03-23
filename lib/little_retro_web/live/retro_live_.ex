@@ -1,10 +1,11 @@
-defmodule LittleRetroWeb.RetroCreateCardsLive do
+defmodule LittleRetroWeb.RetroLive do
   require Logger
   alias Phoenix.PubSub
   alias LittleRetro.Accounts
   alias LittleRetro.Accounts.User
   alias LittleRetro.Retros
   alias LittleRetroWeb.RetroUsers
+  alias LittleRetroWeb.RetroComponents
   use LittleRetroWeb, :live_view
 
   def render(assigns) do
@@ -13,25 +14,7 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
 
     ~H"""
     <div class="h-screen flex flex-col">
-      <div class="md:flex md:items-center md:justify-between">
-        <div class="min-w-0 flex-1">
-          <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Create Cards
-          </h2>
-        </div>
-        <%= if @is_moderator do %>
-          <div class="mt-4 flex md:ml-4 md:mt-0">
-            <button
-              type="button"
-              class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-              data-test="open-users-modal-button"
-              phx-click={show_modal("retro-users")}
-            >
-              Manage Users
-            </button>
-          </div>
-        <% end %>
-      </div>
+      <RetroComponents.header is_moderator={@is_moderator} phase={@retro.phase} />
       <RetroUsers.retro_users_modal email_form={@email_form} user_emails={@retro.user_emails} />
       <div class="flex mt-8 divide-x-2 grow">
         <%= for column <- @retro.column_order |> Enum.map(& @retro.columns[&1]) do %>
@@ -106,17 +89,19 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
     user = socket.assigns.current_user
     retro = Retros.get(params["retro_id"])
 
-    if user.id == retro.moderator_id or user.email in retro.user_emails do
-      email_changeset = Accounts.change_user_email(%User{})
-      PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro.retro_id}")
+    cond do
+      user.id != retro.moderator_id and user.email not in retro.user_emails ->
+        {:ok, redirect_unauthorized(socket)}
 
-      {:ok,
-       socket
-       |> assign(:retro, retro)
-       |> assign(:email_form, to_form(email_changeset))
-       |> assign(:latest_created_card_id, nil)}
-    else
-      {:ok, redirect_unauthorized(socket)}
+      true ->
+        email_changeset = Accounts.change_user_email(%User{})
+        PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro.retro_id}")
+
+        {:ok,
+         socket
+         |> assign(:retro, retro)
+         |> assign(:email_form, to_form(email_changeset))
+         |> assign(:latest_created_card_id, nil)}
     end
   end
 
@@ -251,6 +236,27 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
     end
 
     {:noreply, socket}
+  end
+
+  def handle_event("change_phase", %{"to" => to}, socket) do
+    to = String.to_existing_atom(to)
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id do
+      Retros.change_phase(retro.retro_id, %{phase: to, user_id: user.id})
+      retro = Retros.get(retro.retro_id)
+
+      {:noreply,
+       socket
+       |> put_flash(
+         :info,
+         "A new phase dawns!"
+       )
+       |> assign(:retro, retro)}
+    else
+      {:noreply, put_flash(socket, :error, "Only the moderator can change phase")}
+    end
   end
 
   defp redirect_unauthorized(socket) do

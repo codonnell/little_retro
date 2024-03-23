@@ -131,13 +131,13 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
-  def execute(retro = %__MODULE__{phase: :create_cards}, %ChangePhase{
+  def execute(retro = %__MODULE__{phase: from}, %ChangePhase{
         retro_id: retro_id,
-        to: :group_cards,
+        to: to,
         user_id: user_id
       }) do
     if retro.moderator_id == user_id do
-      %PhaseChanged{retro_id: retro_id, from: :create_cards, to: :group_cards, user_id: user_id}
+      %PhaseChanged{retro_id: retro_id, from: from, to: to, user_id: user_id}
     else
       {:error, :unauthorized}
     end
@@ -203,7 +203,15 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end)
   end
 
-  def apply(retro = %__MODULE__{}, %PhaseChanged{to: phase}) do
-    %__MODULE__{retro | phase: phase}
+  def apply(retro = %__MODULE__{}, %PhaseChanged{to: to}) do
+    # We may get events from memory, in which case phase is an atom, or from the database, in which case phase is a string
+    to =
+      if is_atom(to) do
+        to
+      else
+        String.to_existing_atom(to)
+      end
+
+    %__MODULE__{retro | phase: to}
   end
 end

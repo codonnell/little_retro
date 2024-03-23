@@ -34,8 +34,8 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
     broadcast_retro(retro_id)
   end
 
-  def handle(%PhaseChanged{retro_id: retro_id, to: to}, _metadata) do
-    broadcast(retro_id, {:phase_changed, %{retro: Retros.get(retro_id), to: to}})
+  def handle(%PhaseChanged{retro_id: retro_id}, _metadata) do
+    broadcast_retro(retro_id)
   end
 
   defp broadcast_retro(retro_id) do
