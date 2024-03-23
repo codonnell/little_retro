@@ -42,6 +42,13 @@ defmodule LittleRetroWeb.RetroLive do
                         text={card.text}
                         column_id={column.id}
                       />
+                    <% :group_cards -> %>
+                      <RetroComponents.groupable_card
+                        id={card.id}
+                        text={card.text}
+                        groups={@retro.groups}
+                        grouped_onto={@retro.grouped_onto}
+                      />
                     <% _ -> %>
                       <div>Placeholder</div>
                   <% end %>

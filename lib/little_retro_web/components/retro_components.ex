@@ -64,10 +64,10 @@ defmodule LittleRetroWeb.RetroComponents do
           disabled={not @is_author}
           name="text"
           maxlength="255"
-          x-data="{ resize: () => { $el.style.height = '5px'; $el.style.height = $el.scrollHeight + 'px' } }"
+          x-data="{ resize: () => { $el.style.height = '4px'; $el.style.height = $el.scrollHeight + 'px' } }"
           x-init="resize()"
           @input="resize()"
-          class={"#{if @is_author do "" else "blur-sm " end}block h-9 resize-none w-full rounded border-0 py-1.5 text-gray-900 shadow-lg ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"}
+          class={"#{if @is_author do "" else "blur-sm" end} block h-9 resize-none w-full rounded border-0 py-1.5 text-gray-900 shadow-lg ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"}
         ><%= @text %></textarea>
         <%= if @is_author do %>
           <span
@@ -84,6 +84,21 @@ defmodule LittleRetroWeb.RetroComponents do
         <% end %>
       </span>
     </form>
+    """
+  end
+
+  attr :id, :integer, required: true
+  attr :text, :string, required: true
+  attr :groups, :map, required: true
+  attr :grouped_onto, :map, required: true
+
+  def groupable_card(assigns) do
+    ~H"""
+    <div class="overflow-hidden rounded bg-white shadow-lg">
+      <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+        <%= @text %>
+      </div>
+    </div>
     """
   end
 end
