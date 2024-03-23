@@ -66,6 +66,11 @@ defmodule LittleRetro.Retros do
     end
   end
 
+  @spec delete_card_by_id(retro_id :: binary(), %{
+          id: integer(),
+          author_id: integer(),
+          column_id: integer()
+        }) :: :ok | {:error, atom()}
   def delete_card_by_id(retro_id, %{id: id, author_id: author_id, column_id: column_id}) do
     case CommandedApplication.dispatch(%DeleteCardById{
            id: id,

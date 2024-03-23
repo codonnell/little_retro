@@ -14,16 +14,16 @@
   - [x] Tests for card creation in liveview
 - [x] Users can write text in a card
   - [x] Tests for card editing domain
-  - [ ] Tests for card editing in liveview
-  - [ ] After a user is removed, they are redirected from the liveview if they try to do an action
+  - [x] Tests for card editing in liveview
 - [x] Users can delete cards
-  - [ ] Tests for card deletion domain
-  - [ ] Tests for card deletion in liveview
+  - [x] Tests for card deletion domain
+  - [x] Tests for card deletion in liveview
 - [x] Other users' cards are hidden
 - [x] Fix "Attempting to reconnect" in liveview tests
 
 ## Later
 
+- [ ] After a user is removed, they are redirected from the liveview if they try to do an action
 - [ ] Make real header
 - [ ] Make styling consistent between tailwind-ui and generated phoenix components
 

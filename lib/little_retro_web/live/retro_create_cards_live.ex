@@ -52,10 +52,16 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
               <%= for card <- column.cards |> Enum.reverse() |> Enum.map(& @retro.cards[&1]) do %>
                 <% is_author = card.author_id == @current_user.id %>
                 <li class="divide-y" data-test={"card-list-item-#{card.id}"}>
-                  <form phx-change="edit_card" phx-value-card-id={card.id} phx-debouce="1000">
+                  <form
+                    phx-change="edit_card"
+                    phx-value-card-id={card.id}
+                    phx-debouce="1000"
+                    data-test={"edit-card-form-#{card.id}"}
+                  >
                     <span class="relative">
                       <textarea
                         id={"edit-card-textarea-#{card.id}"}
+                        data-test={"edit-card-textarea-#{card.id}"}
                         phx-update={
                           if is_author do
                             "ignore"
@@ -76,6 +82,7 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
                           phx-click="delete_card_by_id"
                           phx-value-card-id={card.id}
                           phx-value-column-id={column.id}
+                          data-test={"delete-card-button-#{card.id}"}
                         >
                           <.icon
                             name="hero-trash"
@@ -157,7 +164,8 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
             to_form(changeset)
         end
 
-      {:noreply, assign(socket, :email_form, email_form)}
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, email_form: email_form, retro: retro)}
     else
       {:noreply, put_flash(socket, :error, "Only the moderator can add and remove users")}
     end
@@ -169,7 +177,8 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
 
     if user.id == retro.moderator_id do
       Retros.remove_user(socket.assigns.retro.retro_id, email)
-      {:noreply, socket}
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, :retro, retro)}
     else
       {:noreply, put_flash(socket, :error, "Only the moderator can add and remove users")}
     end
@@ -188,7 +197,8 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
         _ -> nil
       end
 
-      {:noreply, socket}
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
     else
       {:noreply, redirect_unauthorized(socket)}
     end
@@ -209,7 +219,8 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
         _ -> nil
       end
 
-      {:noreply, socket}
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
     else
       {:noreply, redirect_unauthorized(socket)}
     end
@@ -233,7 +244,8 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
         _ -> nil
       end
 
-      {:noreply, socket}
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
     else
       {:noreply, redirect_unauthorized(socket)}
     end

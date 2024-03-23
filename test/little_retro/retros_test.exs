@@ -136,4 +136,37 @@ defmodule LittleRetro.RetrosTest do
                Retros.edit_card_text(retro_id, %{id: 0, text: text, author_id: user.id})
     end
   end
+
+  describe "delete_card_by_id/2" do
+    setup do
+      user = user_fixture()
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      %{user: user, retro_id: retro_id}
+    end
+
+    test "deletes a card successfully", %{retro_id: retro_id, user: user} do
+      assert :ok == Retros.delete_card_by_id(retro_id, %{id: 0, author_id: user.id, column_id: 0})
+      refute Map.has_key?(Retros.get(retro_id).cards, 0)
+    end
+
+    test "cannot delete nonexistent card", %{retro_id: retro_id, user: user} do
+      assert {:error, :card_not_found} ==
+               Retros.delete_card_by_id(retro_id, %{id: 1, author_id: user.id, column_id: 0})
+    end
+
+    test "non-author cannot edit card", %{retro_id: retro_id} do
+      assert {:error, :unauthorized} ==
+               Retros.delete_card_by_id(retro_id, %{id: 0, author_id: -1, column_id: 0})
+    end
+
+    test "cannot delete card with nonexistent column", %{retro_id: retro_id, user: user} do
+      assert {:error, :column_not_found} ==
+               Retros.delete_card_by_id(retro_id, %{id: 0, author_id: user.id, column_id: -1})
+    end
+
+    test "cannot delete card with incorrect column", %{retro_id: retro_id, user: user} do
+      assert {:error, :card_not_in_column} ==
+               Retros.delete_card_by_id(retro_id, %{id: 0, author_id: user.id, column_id: 1})
+    end
 end
