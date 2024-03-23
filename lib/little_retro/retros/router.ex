@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.Router do
+  alias LittleRetro.Retros.Commands.GroupCards
   alias LittleRetro.Retros.Commands.ChangePhase
   alias LittleRetro.Retros.Commands.DeleteCardById
   alias LittleRetro.Retros.Commands.EditCardText
@@ -19,7 +20,8 @@ defmodule LittleRetro.Retros.Router do
       CreateCard,
       EditCardText,
       DeleteCardById,
-      ChangePhase
+      ChangePhase,
+      GroupCards
     ],
     to: Retro
   )

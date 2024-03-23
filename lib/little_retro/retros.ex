@@ -1,4 +1,7 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.GroupCards
+  alias LittleRetro.Retros.Aggregates.Retro.Card
+  alias LittleRetro.Retros.Aggregates.Retro.Column
   alias LittleRetro.Retros.Commands.ChangePhase
   alias LittleRetro.Retros.Commands.DeleteCardById
   alias LittleRetro.Retros.Commands.EditCardText
@@ -31,6 +34,7 @@ defmodule LittleRetro.Retros do
     }
   ]
 
+  @spec get(retro_id :: String.t(), timeout :: integer()) :: Retro.t()
   def get(retro_id, timeout \\ 5000) do
     Commanded.aggregate_state(CommandedApplication, Retro, retro_id, timeout)
   end
@@ -70,6 +74,9 @@ defmodule LittleRetro.Retros do
     end
   end
 
+  @spec create_card(retro_id :: String.t(), %{author_id: integer(), column_id: Column.id()}) ::
+          :ok | {:error, atom()}
+
   def create_card(retro_id, %{author_id: author_id, column_id: column_id}) do
     case CommandedApplication.dispatch(%CreateCard{
            retro_id: retro_id,
@@ -93,11 +100,12 @@ defmodule LittleRetro.Retros do
     end
   end
 
-  @spec delete_card_by_id(retro_id :: binary(), %{
+  @spec delete_card_by_id(retro_id :: String.t(), %{
           id: integer(),
           author_id: integer(),
-          column_id: integer()
+          column_id: Column.id()
         }) :: :ok | {:error, atom()}
+
   def delete_card_by_id(retro_id, %{id: id, author_id: author_id, column_id: column_id}) do
     case CommandedApplication.dispatch(%DeleteCardById{
            id: id,
@@ -110,13 +118,32 @@ defmodule LittleRetro.Retros do
     end
   end
 
-  @spec change_phase(retro_id :: binary(), %{phase: Retro.phase(), user_id: integer()}) ::
+  @spec change_phase(retro_id :: String.t(), %{phase: Retro.phase(), user_id: integer()}) ::
           :ok | {:error, atom()}
+
   def change_phase(retro_id, %{phase: phase, user_id: user_id}) do
     case CommandedApplication.dispatch(%ChangePhase{
            retro_id: retro_id,
            to: phase,
            user_id: user_id
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  @spec group_cards(retro_id :: String.t(), %{
+          user_id: integer(),
+          card_id: Card.id(),
+          onto: Card.id()
+        }) :: :ok | {:error, atom()}
+
+  def group_cards(retro_id, %{user_id: user_id, card_id: card_id, onto: onto}) do
+    case CommandedApplication.dispatch(%GroupCards{
+           retro_id: retro_id,
+           user_id: user_id,
+           card_id: card_id,
+           onto: onto
          }) do
       {:error, err} -> {:error, err}
       _ -> :ok

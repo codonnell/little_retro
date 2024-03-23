@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Events.CardsGrouped
+  alias LittleRetro.Retros.Commands.GroupCards
   alias LittleRetro.Retros.Events.PhaseChanged
   alias LittleRetro.Retros.Commands.ChangePhase
   alias LittleRetro.Retros.Events.CardDeleted
@@ -27,6 +29,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     field :user_emails, [String.t()], enforce: true, default: []
     field :cards, %{Card.id() => %Card{}}, enforce: true, default: %{}
     field :groups, %{Card.id() => %{cards: [Card.id()]}}, enforce: true, default: %{}
+    field :grouped_onto, %{Card.id() => Card.id()}, enforce: true, default: []
     field :phase, phase(), enforce: true
   end
 
@@ -91,12 +94,15 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :incorrect_phase}
   end
 
-  def execute(%__MODULE__{moderator_id: moderator_id, cards: cards}, %EditCardText{
-        id: id,
-        text: text,
-        author_id: author_id,
-        retro_id: retro_id
-      }) do
+  def execute(
+        %__MODULE__{phase: :create_cards, moderator_id: moderator_id, cards: cards},
+        %EditCardText{
+          id: id,
+          text: text,
+          author_id: author_id,
+          retro_id: retro_id
+        }
+      ) do
     cond do
       not Map.has_key?(cards, id) -> {:error, :card_not_found}
       author_id != moderator_id and author_id != cards[id].author_id -> {:error, :unauthorized}
@@ -105,7 +111,11 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
-  def execute(retro = %__MODULE__{}, %DeleteCardById{
+  def execute(%__MODULE__{}, %EditCardText{}) do
+    {:error, :incorrect_phase}
+  end
+
+  def execute(retro = %__MODULE__{phase: :create_cards}, %DeleteCardById{
         retro_id: retro_id,
         id: id,
         author_id: author_id,
@@ -131,6 +141,10 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
+  def execute(%__MODULE__{}, %DeleteCardById{}) do
+    {:error, :incorrect_phase}
+  end
+
   def execute(retro = %__MODULE__{phase: from}, %ChangePhase{
         retro_id: retro_id,
         to: to,
@@ -141,6 +155,29 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     else
       {:error, :unauthorized}
     end
+  end
+
+  def execute(
+        retro = %__MODULE__{phase: :group_cards},
+        cmd = %GroupCards{card_id: card_id, onto: onto}
+      ) do
+    cond do
+      not (Map.has_key?(retro.cards, card_id) and Map.has_key?(retro.cards, onto)) ->
+        {:error, :card_not_found}
+
+      Map.get(retro.grouped_onto, onto, :missing) not in [onto, :missing] ->
+        {:error, :invalid_input}
+
+      Map.has_key?(retro.groups, onto) and card_id in retro.groups[onto][:cards] ->
+        {:error, :invalid_input}
+
+      true ->
+        %CardsGrouped{retro_id: cmd.retro_id, user_id: cmd.user_id, card_id: card_id, onto: onto}
+    end
+  end
+
+  def execute(%__MODULE__{}, %GroupCards{}) do
+    {:error, :incorrect_phase}
   end
 
   def execute(%__MODULE__{}, _command) do
@@ -160,7 +197,8 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       column_order: [0, 1, 2],
       user_emails: [],
       cards: %{},
-      groups: %{}
+      groups: %{},
+      grouped_onto: %{}
     }
   end
 
@@ -213,5 +251,74 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       end
 
     %__MODULE__{retro | phase: to}
+  end
+
+  def apply(retro = %__MODULE__{}, %CardsGrouped{card_id: card_id, onto: onto}) do
+    retro =
+      if Map.has_key?(retro.grouped_onto, card_id) do
+        remove_from_group(retro, card_id)
+      else
+        retro
+      end
+
+    add_to_group(retro, card_id, onto)
+  end
+
+  defp remove_from_group(retro = %__MODULE__{}, card_id) do
+    if Map.has_key?(retro.groups, card_id) do
+      group = retro.groups[card_id]
+
+      case Enum.reverse(group[:cards]) do
+        [^card_id, other_card_id] ->
+          %__MODULE__{
+            retro
+            | groups: Map.delete(retro.groups, card_id),
+              grouped_onto: retro.grouped_onto |> Map.delete(card_id) |> Map.delete(other_card_id)
+          }
+
+        [^card_id, new_bottom | rest] ->
+          %__MODULE__{
+            retro
+            | groups:
+                retro.groups
+                |> Map.delete(card_id)
+                |> Map.put(new_bottom, Map.put(group, :cards, Enum.reverse([new_bottom | rest]))),
+              grouped_onto:
+                Enum.reduce(rest, retro.grouped_onto, fn id, grouped_onto ->
+                  Map.put(grouped_onto, id, new_bottom)
+                end)
+                |> Map.put(new_bottom, new_bottom)
+                |> Map.delete(card_id)
+          }
+      end
+    else
+      case Map.get(retro.grouped_onto, card_id) do
+        nil ->
+          retro
+
+        onto ->
+          %__MODULE__{
+            retro
+            | groups:
+                update_in(retro.groups, [Access.key!(onto), Access.key!(:cards)], fn cards ->
+                  Enum.reject(cards, &(&1 == card_id))
+                end),
+              grouped_onto: Map.delete(retro.grouped_onto, card_id)
+          }
+      end
+    end
+  end
+
+  defp add_to_group(retro = %__MODULE__{}, card_id, onto) do
+    retro
+    |> update_in([Access.key!(:groups), Access.key(onto)], fn
+      nil ->
+        %{cards: [card_id, onto]}
+
+      group ->
+        Map.update!(group, :cards, fn cards -> [card_id | cards] end)
+    end)
+    |> put_in([Access.key!(:grouped_onto), Access.key(onto)], onto)
+    |> put_in([Access.key!(:grouped_onto), Access.key(card_id)], onto)
   end
 end

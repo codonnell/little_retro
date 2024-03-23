@@ -27,6 +27,7 @@
 
 ## Later
 
+- [ ] Write README
 - [ ] After a user is removed, they are redirected from the liveview if they try to do an action
 - [ ] Make real header
 - [ ] Make styling consistent between tailwind-ui and generated phoenix components

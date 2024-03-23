@@ -6,14 +6,8 @@ defmodule LittleRetro.RetrosFixtures do
   import LittleRetro.AccountsFixtures
 
   def retro_fixture(attrs \\ %{}) do
-    {:ok, id} =
-      if attrs[:moderator_id] do
-        Retros.create_retro(attrs[:moderator_id])
-      else
-        user = user_fixture()
-        Retros.create_retro(user.id)
-      end
-
-    id
+    moderator = attrs[:moderator] || user_fixture()
+    {:ok, retro_id} = Retros.create_retro(moderator.id)
+    %{retro_id: retro_id, user: moderator}
   end
 end
