@@ -4,7 +4,7 @@ defmodule LittleRetro.RetrosTest do
   alias LittleRetro.Accounts.User
   alias LittleRetro.Retros
 
-  use LittleRetro.DataCase
+  use LittleRetro.DataCase, async: true
 
   import LittleRetro.AccountsFixtures
   import LittleRetro.RetrosFixtures
@@ -279,7 +279,81 @@ defmodule LittleRetro.RetrosTest do
       assert {:error, _} = group.(2, 1)
     end
 
-    # New case: grouping a bottom card into the group it's already in
-    # New case: grouping a non-bottom card into the group it's already in
+    test "cannot group cards outside grouping phase", %{
+      retro_id: retro_id,
+      user: user,
+      group: group
+    } do
+      :ok = Retros.change_phase(retro_id, %{phase: :create_cards, user_id: user.id})
+      assert {:error, :incorrect_phase} == group.(1, 0)
+    end
+  end
+
+  describe "remove_card_from_group/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.change_phase(retro_id, %{phase: :group_cards, user_id: user.id})
+
+      %{
+        retro_id: retro_id,
+        user: user,
+        group: fn card_id, onto ->
+          Retros.group_cards(retro_id, %{user_id: user.id, card_id: card_id, onto: onto})
+        end
+      }
+    end
+
+    test "can disband a group from middle", %{retro_id: retro_id, group: group, user: user} do
+      :ok = group.(1, 0)
+      assert :ok == Retros.remove_card_from_group(retro_id, %{user_id: user.id, card_id: 1})
+      retro = Retros.get(retro_id)
+      refute Map.has_key?(retro.grouped_onto, 0)
+      refute Map.has_key?(retro.grouped_onto, 1)
+      refute Map.has_key?(retro.groups, 0)
+    end
+
+    test "can disband a group from bottom", %{retro_id: retro_id, group: group, user: user} do
+      :ok = group.(1, 0)
+      assert :ok == Retros.remove_card_from_group(retro_id, %{user_id: user.id, card_id: 0})
+      retro = Retros.get(retro_id)
+      refute Map.has_key?(retro.grouped_onto, 0)
+      refute Map.has_key?(retro.grouped_onto, 1)
+      refute Map.has_key?(retro.groups, 0)
+    end
+
+    test "can remove from bottom of large group", %{retro_id: retro_id, group: group, user: user} do
+      :ok = group.(1, 0)
+      :ok = group.(2, 0)
+      assert :ok == Retros.remove_card_from_group(retro_id, %{user_id: user.id, card_id: 0})
+      retro = Retros.get(retro_id)
+      refute Map.has_key?(retro.grouped_onto, 0)
+      assert 1 == retro.grouped_onto[1]
+      assert 1 == retro.grouped_onto[2]
+      assert [2, 1] == retro.groups[1][:cards]
+    end
+
+    test "can remove from middle of large group", %{retro_id: retro_id, group: group, user: user} do
+      :ok = group.(1, 0)
+      :ok = group.(2, 0)
+      assert :ok == Retros.remove_card_from_group(retro_id, %{user_id: user.id, card_id: 0})
+      retro = Retros.get(retro_id)
+      refute Map.has_key?(retro.grouped_onto, 0)
+      assert 1 == retro.grouped_onto[1]
+      assert 1 == retro.grouped_onto[2]
+      assert [2, 1] == retro.groups[1][:cards]
+    end
+
+    test "cannot remove nonexistent card from group", %{retro_id: retro_id, user: user} do
+      assert {:error, :card_not_found} ==
+               Retros.remove_card_from_group(retro_id, %{user_id: user.id, card_id: -1})
+    end
+
+    test "cannot remove ungrouped card from group", %{retro_id: retro_id, user: user} do
+      assert {:error, _} =
+               Retros.remove_card_from_group(retro_id, %{user_id: user.id, card_id: 0})
+    end
   end
 end

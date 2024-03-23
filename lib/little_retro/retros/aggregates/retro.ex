@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Events.CardRemovedFromGroup
+  alias LittleRetro.Retros.Commands.RemoveCardFromGroup
   alias LittleRetro.Retros.Events.CardsGrouped
   alias LittleRetro.Retros.Commands.GroupCards
   alias LittleRetro.Retros.Events.PhaseChanged
@@ -180,6 +182,26 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :incorrect_phase}
   end
 
+  def execute(
+        retro = %__MODULE__{phase: :group_cards},
+        cmd = %RemoveCardFromGroup{card_id: card_id}
+      ) do
+    cond do
+      not Map.has_key?(retro.cards, card_id) ->
+        {:error, :card_not_found}
+
+      not Map.has_key?(retro.grouped_onto, card_id) ->
+        {:error, :invalid_input}
+
+      true ->
+        %CardRemovedFromGroup{retro_id: cmd.retro_id, user_id: cmd.user_id, card_id: card_id}
+    end
+  end
+
+  def execute(%__MODULE__{}, %RemoveCardFromGroup{}) do
+    {:error, :incorrect_phase}
+  end
+
   def execute(%__MODULE__{}, _command) do
     {:error, :unrecognized_command}
   end
@@ -264,6 +286,10 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     add_to_group(retro, card_id, onto)
   end
 
+  def apply(retro = %__MODULE__{}, %CardRemovedFromGroup{card_id: card_id}) do
+    remove_from_group(retro, card_id)
+  end
+
   defp remove_from_group(retro = %__MODULE__{}, card_id) do
     if Map.has_key?(retro.groups, card_id) do
       group = retro.groups[card_id]
@@ -292,19 +318,25 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
           }
       end
     else
-      case Map.get(retro.grouped_onto, card_id) do
-        nil ->
-          retro
+      onto = Map.get(retro.grouped_onto, card_id)
 
-        onto ->
-          %__MODULE__{
-            retro
-            | groups:
-                update_in(retro.groups, [Access.key!(onto), Access.key!(:cards)], fn cards ->
-                  Enum.reject(cards, &(&1 == card_id))
-                end),
-              grouped_onto: Map.delete(retro.grouped_onto, card_id)
-          }
+      retro = %__MODULE__{
+        retro
+        | groups:
+            update_in(retro.groups, [Access.key!(onto), Access.key!(:cards)], fn cards ->
+              Enum.reject(cards, &(&1 == card_id))
+            end),
+          grouped_onto: Map.delete(retro.grouped_onto, card_id)
+      }
+
+      if 1 == Enum.count(retro.groups[onto][:cards]) do
+        %__MODULE__{
+          retro
+          | groups: Map.delete(retro.groups, onto),
+            grouped_onto: Map.delete(retro.grouped_onto, onto)
+        }
+      else
+        retro
       end
     end
   end

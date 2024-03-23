@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.RemoveCardFromGroup
   alias LittleRetro.Retros.Commands.GroupCards
   alias LittleRetro.Retros.Aggregates.Retro.Card
   alias LittleRetro.Retros.Aggregates.Retro.Column
@@ -144,6 +145,20 @@ defmodule LittleRetro.Retros do
            user_id: user_id,
            card_id: card_id,
            onto: onto
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  @spec remove_card_from_group(retro_id :: String.t(), %{user_id: integer(), card_id: Card.id()}) ::
+          :ok | {:error, atom()}
+
+  def remove_card_from_group(retro_id, %{user_id: user_id, card_id: card_id}) do
+    case CommandedApplication.dispatch(%RemoveCardFromGroup{
+           retro_id: retro_id,
+           user_id: user_id,
+           card_id: card_id
          }) do
       {:error, err} -> {:error, err}
       _ -> :ok
