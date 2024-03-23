@@ -37,7 +37,12 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
         <%= for column <- @retro.column_order |> Enum.map(& @retro.columns[&1]) do %>
           <div class="grow">
             <h3 class="text-xl font-bold text-center"><%= column.label %></h3>
-            <div class="text-center mt-4" phx-click="create_card" phx-value-column-id={column.id}>
+            <div
+              class="text-center mt-4"
+              phx-click="create_card"
+              phx-value-column-id={column.id}
+              data-test={"create-card-column-#{column.id}"}
+            >
               <.icon
                 name="hero-plus-circle"
                 class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
@@ -46,7 +51,7 @@ defmodule LittleRetroWeb.RetroCreateCardsLive do
             <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
               <%= for card <- column.cards |> Enum.reverse() |> Enum.map(& @retro.cards[&1]) do %>
                 <% is_author = card.author_id == @current_user.id %>
-                <li class="divide-y">
+                <li class="divide-y" data-test={"card-list-item-#{card.id}"}>
                   <form phx-change="edit_card" phx-value-card-id={card.id} phx-debouce="1000">
                     <span class="relative">
                       <textarea

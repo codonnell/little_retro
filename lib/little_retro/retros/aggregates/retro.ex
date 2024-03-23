@@ -93,6 +93,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
         retro_id: retro_id
       }) do
     cond do
+      not Map.has_key?(cards, id) -> {:error, :card_not_found}
       author_id != moderator_id and author_id != cards[id].author_id -> {:error, :unauthorized}
       String.length(text) > 255 -> {:error, :card_text_too_long}
       true -> %CardTextEdited{id: id, author_id: author_id, text: text, retro_id: retro_id}
@@ -105,7 +106,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
         author_id: author_id,
         column_id: column_id
       }) do
-    card = retro.cards[id]
+    card = Map.get(retro.cards, id)
 
     cond do
       is_nil(card) ->

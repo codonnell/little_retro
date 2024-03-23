@@ -23,7 +23,11 @@ defmodule LittleRetroWeb.RetroUsers do
       </div>
       <p :if={Enum.count(@user_emails) == 0}>No users invited</p>
       <ul :if={Enum.count(@user_emails) > 0} role="list" class="divide-y divide-gray-200">
-        <li :for={user_email <- Enum.reverse(@user_emails)} class="py-4">
+        <li
+          :for={user_email <- Enum.reverse(@user_emails)}
+          class="py-4"
+          data-test={"user-email-list-item-#{user_email}"}
+        >
           <span
             phx-click="remove_email"
             phx-value-email={user_email}

@@ -105,4 +105,35 @@ defmodule LittleRetro.RetrosTest do
       assert {:error, _} = Retros.create_card(retro_id, %{author_id: 0, column_id: -1})
     end
   end
+
+  describe "edit_card_text/2" do
+    setup do
+      user = user_fixture()
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      %{user: user, retro_id: retro_id}
+    end
+
+    test "edits a card successfully", %{retro_id: retro_id, user: user} do
+      Retros.edit_card_text(retro_id, %{id: 0, text: "Hello World", author_id: user.id})
+      assert Retros.get(retro_id).cards[0].text == "Hello World"
+    end
+
+    test "non-author cannot edit card", %{retro_id: retro_id} do
+      assert {:error, :unauthorized} ==
+               Retros.edit_card_text(retro_id, %{author_id: -1, text: "Hello World", id: 0})
+    end
+
+    test "cannot edit nonexistent card", %{retro_id: retro_id, user: user} do
+      assert {:error, :card_not_found} ==
+               Retros.edit_card_text(retro_id, %{id: -1, author_id: user.id, text: "Hello World"})
+    end
+
+    test "cannot make text more than 255 characters", %{retro_id: retro_id, user: user} do
+      text = String.duplicate("a", 256)
+
+      assert {:error, :card_text_too_long} ==
+               Retros.edit_card_text(retro_id, %{id: 0, text: text, author_id: user.id})
+    end
+  end
 end

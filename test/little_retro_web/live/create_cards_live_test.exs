@@ -20,18 +20,20 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
         |> log_in_user(user)
         |> live(~p"/retros/#{retro_id}/create_cards")
 
-      PubSub.subscribe(LittleRetro.PubSub, "retro_users:#{retro_id}")
+      PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro_id}")
 
       view
       |> form("[data-test=user-email-form]")
       |> render_submit(%{user: %{email: email}})
 
-      # Ensure pubsub message has been broadcast
-      assert_receive {:user_added_by_email, ^email}
-      # Send message to liveview process to ensure liveview has processed pubsub message
-      _ = :sys.get_state(view.pid)
+      wait_for(view, :retro_updated)
 
-      assert render(view) =~ "foo@example.com"
+      assert has_element?(
+               view,
+               "[data-test=\"user-email-list-item-#{email}\"]",
+               "foo@example.com"
+             )
+
     end
 
     test "non-moderator cannot add user by email", %{conn: conn, user: user} do
@@ -63,18 +65,15 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
         |> log_in_user(user)
         |> live(~p"/retros/#{retro_id}/create_cards")
 
-      PubSub.subscribe(LittleRetro.PubSub, "retro_users:#{retro_id}")
+      PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro_id}")
 
       view
       |> element("[data-test=\"remove-user-email-#{email}\"]")
       |> render_click()
 
-      # Ensure pubsub message has been broadcast
-      assert_receive {:user_removed_by_email, ^email}
-      # Send message to liveview process to ensure liveview has processed pubsub message
-      _ = :sys.get_state(view.pid)
+      wait_for(view, :retro_updated)
 
-      refute render(view) =~ "foo@example.com"
+      refute has_element?(view, "[data-test=\"user-email-list-item-#{email}\"]")
     end
 
     test "non-moderator cannot remove user by email", %{conn: conn, user: user} do
@@ -94,5 +93,33 @@ defmodule LittleRetroWeb.CreateCardsLiveTest do
              |> render_click() =~
                "Only the moderator can add and remove users"
     end
+  end
+
+  describe "create card" do
+    test "authorized user can create a card", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(user)
+        |> live(~p"/retros/#{retro_id}/create_cards")
+
+      PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro_id}")
+
+      view
+      |> element("[data-test=create-card-column-0]")
+      |> render_click()
+
+      wait_for(view, :card_created)
+
+      assert has_element?(view, "[data-test=card-list-item-0]")
+    end
+  end
+
+  defp wait_for(view, msg) do
+    # Ensure pubsub message has been broadcast
+    assert_receive {^msg, _}
+    # Send message to liveview process to ensure liveview has processed pubsub message
+    _ = :sys.get_state(view.pid)
   end
 end
