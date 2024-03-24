@@ -26,19 +26,8 @@ import Alpine from "alpinejs";
 window.Alpine = Alpine;
 Alpine.start();
 
-const groupableCardId = (id) => `groupable-card-${id}`;
-
-window.addEventListener("phx:cards_grouped", (event) => {
-  const el = document.getElementById(groupableCardId(event.detail["card-id"]));
-  el.classList.add("invisible");
-})
-
-window.addEventListener("phx:card_removed_from_group", (event) => {
-  const el = document.getElementById(groupableCardId(event.detail["card-id"]));
-  el.classList.remove("invisible");
-})
-
 let Hooks = {};
+
 // Ungrouped cards are draggable
 // Stack bottoms and ungrouped cards are drag targets
 Hooks.GroupableCard = {
@@ -59,7 +48,7 @@ Hooks.GroupableCard = {
         const id = event.dataTransfer.getData("text/plain");
         const onto = this.el.getAttribute("data-card-id");
         if (onto !== id) {
-          document.getElementById(groupableCardId(id)).classList.add("invisible");
+          document.getElementById(`groupable-card-${id}`).classList.add("invisible");
           this.pushEvent("group_cards", {"card-id": id, "onto": onto});
         }
       });

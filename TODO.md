@@ -24,7 +24,7 @@
 - [ ] Grouping cards
   - [x] Grouping domain functions
   - [ ] Grouping UI
-    - [ ] Drag cards to group into a tight stack
+    - [x] Drag cards to group into a tight stack
     - [ ] Make stacks expandable client-side (probably alpine.js, but maybe LiveView.JS)
     - [ ] Drag cards out of an expanded stack OR click to remove a card from an expanded stack
     - [ ] Label stacks

@@ -83,6 +83,8 @@ defmodule LittleRetroWeb.RetroComponents do
     """
   end
 
+  # TODO: Show a modal with expanded cards when clicking on a stack
+
   attr :id, :integer, required: true
   attr :text, :string, required: true
   attr :groups, :map, required: true
@@ -103,7 +105,6 @@ defmodule LittleRetroWeb.RetroComponents do
       <div
         class={"overflow-hidden rounded bg-white shadow-lg #{if @draggable do "cursor-pointer" end} #{if @invisible do "invisible" end}"}
         id={"groupable-card-#{@id}"}
-        phx-update="ignore"
         phx-hook="GroupableCard"
         draggable={
           if @draggable do
