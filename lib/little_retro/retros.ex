@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.RemoveVoteFromCard
   alias LittleRetro.Retros.Commands.VoteForCard
   alias LittleRetro.Retros.Commands.RemoveCardFromGroup
   alias LittleRetro.Retros.Commands.GroupCards
@@ -171,6 +172,20 @@ defmodule LittleRetro.Retros do
 
   def vote_for_card(retro_id, %{user_id: user_id, card_id: card_id}) do
     case CommandedApplication.dispatch(%VoteForCard{
+           retro_id: retro_id,
+           user_id: user_id,
+           card_id: card_id
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  @spec remove_vote_from_card(retro_id :: String.t(), %{user_id: integer(), card_id: Card.id()}) ::
+          :ok | {:error, atom()}
+
+  def remove_vote_from_card(retro_id, %{user_id: user_id, card_id: card_id}) do
+    case CommandedApplication.dispatch(%RemoveVoteFromCard{
            retro_id: retro_id,
            user_id: user_id,
            card_id: card_id

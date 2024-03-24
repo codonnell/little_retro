@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Events.UserRemovedVoteFromCard
+  alias LittleRetro.Retros.Commands.RemoveVoteFromCard
   alias LittleRetro.Retros.Commands.VoteForCard
   alias LittleRetro.Retros.Events.UserVotedForCard
   alias LittleRetro.Retros.Events.CardRemovedFromGroup
@@ -231,6 +233,24 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :incorrect_phase}
   end
 
+  def execute(
+        retro = %__MODULE__{phase: :vote},
+        cmd = %RemoveVoteFromCard{user_id: user_id, card_id: card_id}
+      ) do
+    cond do
+      not (card_id in Map.get(retro.votes_by_user_id, user_id, []) and
+               user_id in Map.get(retro.votes_by_card_id, card_id, [])) ->
+        {:error, :invalid_input}
+
+      true ->
+        %UserRemovedVoteFromCard{retro_id: cmd.retro_id, user_id: user_id, card_id: card_id}
+    end
+  end
+
+  def execute(%__MODULE__{}, %RemoveVoteFromCard{}) do
+    {:error, :incorrect_phase}
+  end
+
   def execute(%__MODULE__{}, _command) do
     {:error, :unrecognized_command}
   end
@@ -334,6 +354,54 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       nil -> [user_id]
       users -> [user_id | users]
     end)
+  end
+
+  def apply(retro = %__MODULE__{}, %UserRemovedVoteFromCard{user_id: user_id, card_id: card_id}) do
+    {_, votes_by_user_id} =
+      Map.get_and_update(retro.votes_by_user_id, user_id, fn
+        [^card_id] ->
+          :pop
+
+        cards ->
+          {cards, reject_first(cards, &(&1 == card_id))}
+      end)
+
+    {_, votes_by_card_id} =
+      Map.get_and_update(retro.votes_by_card_id, card_id, fn
+        [^user_id] ->
+          :pop
+
+        users ->
+          {users, reject_first(users, &(&1 == user_id))}
+      end)
+
+    %__MODULE__{
+      retro
+      | votes_by_user_id: votes_by_user_id,
+        votes_by_card_id: votes_by_card_id
+    }
+  end
+
+  defp reject_first(enumerable, pred) do
+    i = Enum.find_index(enumerable, pred)
+    last_index = Enum.count(enumerable) - 1
+
+    case i do
+      nil ->
+        enumerable
+
+      0 ->
+        Enum.drop(enumerable, 1)
+
+      ^last_index ->
+        Enum.slice(enumerable, 0..(last_index - 1))
+
+      _ ->
+        Enum.concat(
+          Enum.slice(enumerable, 0..(i - 1)),
+          Enum.slice(enumerable, (i + 1)..last_index)
+        )
+    end
   end
 
   defp remove_from_group(retro = %__MODULE__{}, card_id) do

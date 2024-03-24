@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
+  alias LittleRetro.Retros.Events.UserRemovedVoteFromCard
   alias LittleRetro.Retros.Events.UserVotedForCard
   alias LittleRetro.Retros.Events.CardRemovedFromGroup
   alias LittleRetro.Retros.Events.CardsGrouped
@@ -25,7 +26,8 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
     broadcast_retro(retro_id)
   end
 
-  def handle(%CardCreated{retro_id: retro_id, id: id}, _metadata) do
+  # The atom `:author_id` doesn't exist elsewhere. We need it here to ensure the atom exists before JSON deserialization
+  def handle(%CardCreated{retro_id: retro_id, id: id, author_id: _author_id}, _metadata) do
     broadcast(retro_id, {:card_created, %{retro: Retros.get(retro_id), card_id: id}})
   end
 
@@ -53,6 +55,10 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
   end
 
   def handle(%UserVotedForCard{retro_id: retro_id}, _metadata) do
+    broadcast_retro(retro_id)
+  end
+
+  def handle(%UserRemovedVoteFromCard{retro_id: retro_id}, _metadata) do
     broadcast_retro(retro_id)
   end
 

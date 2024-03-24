@@ -413,4 +413,43 @@ defmodule LittleRetro.RetrosTest do
       assert {:error, _} = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
     end
   end
+
+  describe "remove_vote_for_card/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      # Create more cards so the max votes gets high enough to vote twice
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "can remove an existing vote", %{retro_id: retro_id, user: user} do
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      assert :ok == Retros.remove_vote_from_card(retro_id, %{user_id: user.id, card_id: 0})
+      retro = Retros.get(retro_id)
+      refute Map.has_key?(retro.votes_by_user_id, user.id)
+      refute Map.has_key?(retro.votes_by_card_id, 0)
+    end
+
+    test "can remove from multiple votes", %{retro_id: retro_id, user: user} do
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      assert :ok == Retros.remove_vote_from_card(retro_id, %{user_id: user.id, card_id: 0})
+      retro = Retros.get(retro_id)
+      assert [0] == retro.votes_by_user_id[user.id]
+      assert [user.id] == retro.votes_by_card_id[0]
+    end
+
+    test "cannot remove nonexistent vote", %{retro_id: retro_id, user: user} do
+      assert {:error, _} = Retros.remove_vote_from_card(retro_id, %{user_id: user.id, card_id: 0})
+    end
+
+    test "cannot remove vote outside of voting phase", %{retro_id: retro_id, user: user} do
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      :ok = Retros.change_phase(retro_id, %{user_id: user.id, phase: :group_cards})
+      assert {:error, _} = Retros.remove_vote_from_card(retro_id, %{user_id: user.id, card_id: 0})
+    end
+  end
 end
