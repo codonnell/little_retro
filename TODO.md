@@ -25,9 +25,21 @@
   - [x] Grouping domain functions
   - [ ] Grouping UI
     - [x] Drag cards to group into a tight stack
-    - [ ] Make stacks expandable client-side (probably alpine.js, but maybe LiveView.JS)
-    - [ ] Drag cards out of an expanded stack OR click to remove a card from an expanded stack
+    - [x] Make stacks expandable client-side (probably alpine.js, but maybe LiveView.JS)
+    - [x] Drag cards out of an expanded stack OR click to remove a card from an expanded stack
     - [ ] Label stacks
+- [ ] Voting for cards
+  - [ ] Write voting domain functions
+  - [ ] Write voting UI
+- [ ] Discussion
+  - [ ] Write discussion domain functions
+  - [ ] Write discussion UI
+- [ ] Action items
+  - [ ] Write action item domain functions
+  - [ ] Write action item UI
+- [ ] See currently active retros on homepage
+- [ ] List completed retros (show action items?)
+- [ ] Navigate to completed retros (ready only mode?)
 
 ## Later
 

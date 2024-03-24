@@ -83,10 +83,9 @@ defmodule LittleRetroWeb.RetroComponents do
     """
   end
 
-  # TODO: Show a modal with expanded cards when clicking on a stack
-
   attr :id, :integer, required: true
   attr :text, :string, required: true
+  attr :cards, :map, required: true
   attr :groups, :map, required: true
   attr :grouped_onto, :map, required: true
 
@@ -97,16 +96,32 @@ defmodule LittleRetroWeb.RetroComponents do
       assign(assigns,
         draggable: not Map.has_key?(assigns.grouped_onto, assigns.id),
         drag_target: drag_target,
-        invisible: not drag_target
+        invisible: not drag_target,
+        bottom_card: Map.has_key?(assigns.groups, assigns.id),
+        card_group:
+          if Map.has_key?(assigns.groups, assigns.id) do
+            assigns.groups[assigns.id][:cards]
+            |> Enum.map(fn id -> assigns.cards[id] end)
+            |> Enum.reverse()
+          end
       )
 
     ~H"""
+    <%= if @bottom_card do %>
+      <.expanded_card_group_modal cards={@card_group} />
+    <% end %>
     <div class="relative">
       <div
-        class={"overflow-hidden rounded bg-white shadow-lg #{if @draggable do "cursor-pointer" end} #{if @invisible do "invisible" end}"}
+        class={"overflow-hidden rounded bg-white shadow-lg hover:shadow-xl hover:ring-1 ring-gray-300 #{if @invisible do "invisible" else "cursor-pointer" end}"}
         id={"groupable-card-#{@id}"}
         phx-hook="GroupableCard"
+        phx-click={
+          if @bottom_card do
+            show_modal("expanded-card-group-modal-#{@id}")
+          end
+        }
         draggable={
+          # draggable is an enumerated attribute, so it must be the string "true" or "false"
           if @draggable do
             "true"
           else
@@ -114,26 +129,13 @@ defmodule LittleRetroWeb.RetroComponents do
           end
         }
         data-card-id={@id}
-        data-dragtarget={
-          if @drag_target do
-            "true"
-          else
-            "false"
-          end
-        }
-        data-draggable={
-          if @draggable do
-            "true"
-          else
-            "false"
-          end
-        }
+        data-dragtarget={@drag_target}
       >
         <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
           <%= @text %>
         </div>
       </div>
-      <%= if Map.has_key?(@groups, @id) do %>
+      <%= if @bottom_card do %>
         <div class="overflow-hidden absolute -right-2 -top-2 -z-10 rounded bg-slate-100 shadow-lg">
           <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
             <%= @text %>
@@ -141,6 +143,38 @@ defmodule LittleRetroWeb.RetroComponents do
         </div>
       <% end %>
     </div>
+    """
+  end
+
+  attr :cards, :list, required: true
+
+  def expanded_card_group_modal(assigns) do
+    ~H"""
+    <.modal id={"expanded-card-group-modal-#{hd(@cards).id}"}>
+      <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
+        <%= for card <- Enum.reverse(@cards) do %>
+          <li id={"expanded-card-group-list-item-#{card.id}"} class="divide-y">
+            <div class="relative overflow-hidden rounded bg-white shadow-lg">
+              <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+                <%= card.text %>
+              </div>
+              <span
+                phx-click={
+                  JS.push("remove_card_from_group")
+                  |> JS.add_class("hidden", to: "#expanded-card-group-list-item-#{card.id}")
+                }
+                phx-value-card-id={card.id}
+              >
+                <.icon
+                  name="hero-x-mark"
+                  class="absolute h-4 w-4 top-0.5 right-0.5 text-red-200 cursor-pointer hover:text-red-400"
+                />
+              </span>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </.modal>
     """
   end
 end

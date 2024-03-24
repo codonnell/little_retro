@@ -32,14 +32,16 @@ let Hooks = {};
 // Stack bottoms and ungrouped cards are drag targets
 Hooks.GroupableCard = {
   mounted() {
-    if (this.el.getAttribute("data-draggable") === "true") {
-      const id = this.el.getAttribute("data-card-id");
+    if (this.el.getAttribute("draggable") === "true") {
       this.el.addEventListener("dragstart", (event) => {
+        // Need to get id here rather than on mount.
+        // Sometimes the id goes missing when we do it on mount.
+        const id = event.target.getAttribute("data-card-id");
         event.dataTransfer.setData("text/plain", id);
         event.dataTransfer.dropEffect = "move";
       });
     }
-    if (this.el.getAttribute("data-dragtarget") === "true") {
+    if (this.el.hasAttribute("data-dragtarget")) {
       this.el.addEventListener("dragover", (event) => {
         event.preventDefault();
       });

@@ -356,4 +356,61 @@ defmodule LittleRetro.RetrosTest do
                Retros.remove_card_from_group(retro_id, %{user_id: user.id, card_id: 0})
     end
   end
+
+  describe "vote_for_card/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.change_phase(retro_id, %{phase: :group_cards, user_id: user.id})
+      Retros.group_cards(retro_id, %{user_id: user.id, card_id: 1, onto: 0})
+      Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "can vote for an ungrouped card", %{retro_id: retro_id, user: user} do
+      assert :ok == Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 2})
+      retro = Retros.get(retro_id)
+      assert %{user.id => [2]} == retro.votes_by_user_id
+      assert %{2 => [user.id]} == retro.votes_by_card_id
+    end
+
+    test "can vote for the bottom card of a group", %{retro_id: retro_id, user: user} do
+      assert :ok == Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      retro = Retros.get(retro_id)
+      assert %{user.id => [0]} == retro.votes_by_user_id
+      assert %{0 => [user.id]} == retro.votes_by_card_id
+    end
+
+    test "cannot vote for a middle card of a group", %{retro_id: retro_id, user: user} do
+      assert {:error, _} = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 1})
+    end
+
+    test "can vote for the same card twice", %{retro_id: retro_id, user: user} do
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 2})
+      assert :ok == Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 2})
+      retro = Retros.get(retro_id)
+      assert %{user.id => [2, 2]} == retro.votes_by_user_id
+      assert %{2 => [user.id, user.id]} == retro.votes_by_card_id
+    end
+
+    test "cannot place more than round(sqrt(num_cards)) votes", %{
+      retro_id: retro_id,
+      user: user
+    } do
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      assert {:error, _} = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+    end
+
+    test "cannot vote for a card that doesn't exist", %{retro_id: retro_id, user: user} do
+      assert {:error, _} = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: -1})
+    end
+
+    test "cannot vote outside of voting phase", %{retro_id: retro_id, user: user} do
+      :ok = Retros.change_phase(retro_id, %{user_id: user.id, phase: :group_cards})
+      assert {:error, _} = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+    end
+  end
 end

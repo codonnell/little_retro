@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.Router do
+  alias LittleRetro.Retros.Commands.VoteForCard
   alias LittleRetro.Retros.Commands.RemoveCardFromGroup
   alias LittleRetro.Retros.Commands.GroupCards
   alias LittleRetro.Retros.Commands.ChangePhase
@@ -23,7 +24,8 @@ defmodule LittleRetro.Retros.Router do
       DeleteCardById,
       ChangePhase,
       GroupCards,
-      RemoveCardFromGroup
+      RemoveCardFromGroup,
+      VoteForCard
     ],
     to: Retro
   )

@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
+  alias LittleRetro.Retros.Events.UserVotedForCard
   alias LittleRetro.Retros.Events.CardRemovedFromGroup
   alias LittleRetro.Retros.Events.CardsGrouped
   alias LittleRetro.Retros.Events.PhaseChanged
@@ -49,6 +50,10 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
       retro_id,
       {:card_removed_from_group, %{card_id: event.card_id, retro: Retros.get(retro_id)}}
     )
+  end
+
+  def handle(%UserVotedForCard{retro_id: retro_id}, _metadata) do
+    broadcast_retro(retro_id)
   end
 
   defp broadcast_retro(retro_id) do

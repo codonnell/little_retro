@@ -1,4 +1,6 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Commands.VoteForCard
+  alias LittleRetro.Retros.Events.UserVotedForCard
   alias LittleRetro.Retros.Events.CardRemovedFromGroup
   alias LittleRetro.Retros.Commands.RemoveCardFromGroup
   alias LittleRetro.Retros.Events.CardsGrouped
@@ -33,6 +35,8 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     field :groups, %{Card.id() => %{cards: [Card.id()]}}, enforce: true, default: %{}
     field :grouped_onto, %{Card.id() => Card.id()}, enforce: true, default: []
     field :phase, phase(), enforce: true
+    field :votes_by_card_id, %{Card.id() => [integer()]}, enforce: true, default: %{}
+    field :votes_by_user_id, %{integer() => [Card.id()]}, enforce: true, default: %{}
   end
 
   def execute(%__MODULE__{retro_id: nil, moderator_id: nil}, %CreateRetro{
@@ -202,6 +206,31 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :incorrect_phase}
   end
 
+  def execute(
+        retro = %__MODULE__{phase: :vote},
+        cmd = %VoteForCard{user_id: user_id, card_id: card_id}
+      ) do
+    max_votes = round(:math.sqrt(Enum.count(retro.cards)))
+
+    cond do
+      not Map.has_key?(retro.cards, card_id) ->
+        {:error, :card_not_found}
+
+      max_votes == Enum.count(Map.get(retro.votes_by_user_id, user_id, [])) ->
+        {:error, :invalid_input}
+
+      middle_card_in_group?(retro, card_id) ->
+        {:error, :invalid_input}
+
+      true ->
+        %UserVotedForCard{retro_id: cmd.retro_id, user_id: user_id, card_id: card_id}
+    end
+  end
+
+  def execute(%__MODULE__{}, %VoteForCard{}) do
+    {:error, :incorrect_phase}
+  end
+
   def execute(%__MODULE__{}, _command) do
     {:error, :unrecognized_command}
   end
@@ -220,7 +249,9 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       user_emails: [],
       cards: %{},
       groups: %{},
-      grouped_onto: %{}
+      grouped_onto: %{},
+      votes_by_card_id: %{},
+      votes_by_user_id: %{}
     }
   end
 
@@ -272,7 +303,10 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
         String.to_existing_atom(to)
       end
 
-    %__MODULE__{retro | phase: to}
+    case to do
+      :vote -> change_phase_to_vote(retro)
+      _ -> %__MODULE__{retro | phase: to}
+    end
   end
 
   def apply(retro = %__MODULE__{}, %CardsGrouped{card_id: card_id, onto: onto}) do
@@ -288,6 +322,18 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
 
   def apply(retro = %__MODULE__{}, %CardRemovedFromGroup{card_id: card_id}) do
     remove_from_group(retro, card_id)
+  end
+
+  def apply(retro = %__MODULE__{}, %UserVotedForCard{user_id: user_id, card_id: card_id}) do
+    retro
+    |> update_in([Access.key!(:votes_by_user_id), Access.key(user_id)], fn
+      nil -> [card_id]
+      cards -> [card_id | cards]
+    end)
+    |> update_in([Access.key!(:votes_by_card_id), Access.key(card_id)], fn
+      nil -> [user_id]
+      users -> [user_id | users]
+    end)
   end
 
   defp remove_from_group(retro = %__MODULE__{}, card_id) do
@@ -352,5 +398,13 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end)
     |> put_in([Access.key!(:grouped_onto), Access.key(onto)], onto)
     |> put_in([Access.key!(:grouped_onto), Access.key(card_id)], onto)
+  end
+
+  defp change_phase_to_vote(retro = %__MODULE__{}) do
+    %__MODULE__{retro | votes_by_card_id: %{}, votes_by_user_id: %{}, phase: :vote}
+  end
+
+  defp middle_card_in_group?(retro = %__MODULE__{}, card_id) do
+    Map.get(retro.grouped_onto, card_id, :missing) not in [:missing, card_id]
   end
 end
