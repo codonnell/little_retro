@@ -48,6 +48,7 @@ defmodule LittleRetroWeb.RetroLive do
                       <RetroComponents.groupable_card
                         id={card.id}
                         text={card.text}
+                        cards={@retro.cards}
                         groups={@retro.groups}
                         grouped_onto={@retro.grouped_onto}
                       />
@@ -261,6 +262,27 @@ defmodule LittleRetroWeb.RetroLive do
              card_id: card_id,
              user_id: user.id,
              onto: onto
+           }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+  end
+
+  def handle_event("remove_card_from_group", %{"card-id" => card_id}, socket) do
+    card_id = String.to_integer(card_id)
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id or user.email in retro.user_emails do
+      case Retros.remove_card_from_group(retro.retro_id, %{
+             card_id: card_id,
+             user_id: user.id
            }) do
         {:error, err} -> Logger.error(err)
         _ -> nil

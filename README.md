@@ -13,6 +13,19 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 
+## How to add a new retro action
+
+1. Write domain-level tests [here](test/little_retro/retros_test.exs).
+1. Add an implementing domain function [here](lib/little_retro/retros.ex).
+1. Add an implementing command [here](lib/little_retro/retros/commands).
+1. Add the command to the router [here](lib/little_retro/retros/router.ex).
+1. Add an implementing event [here](lib/little_retro/retros/events).
+1. Implement `execute` and `apply` functions for the command and event in the [aggregate](lib/little_retro/aggregates/retro.ex).
+1. Publish the event via `Phoenix.PubSub` [here](lib/little_retro/retros/event_handlers/retro_pub_sub.ex).
+1. If it is a custom pubsub event, add a handler to it in the liveview [here](lib/little_retro_web/live/retro_live.ex).
+1. Implement the UI using the [liveview](lib/little_retro_web/live/retro_live.ex) and [component](lib/little_retro_web/components/retro_components.ex) modules.
+1. If feasible, add liveview tests for the action [here](test/little_retro_web/live/retro_live_test.exs).
+
 ## Learn more
 
   * Official website: https://www.phoenixframework.org/
