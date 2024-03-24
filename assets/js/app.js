@@ -16,40 +16,82 @@
 //
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
-import "phoenix_html"
+import "phoenix_html";
 // Establish Phoenix Socket and LiveView configuration.
-import {Socket} from "phoenix"
-import {LiveSocket} from "phoenix_live_view"
-import topbar from "../vendor/topbar"
-import Alpine from "alpinejs"
+import {Socket} from "phoenix";
+import {LiveSocket} from "phoenix_live_view";
+import topbar from "../vendor/topbar";
+import Alpine from "alpinejs";
 
-window.Alpine = Alpine
-Alpine.start()
+window.Alpine = Alpine;
+Alpine.start();
 
-let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+const groupableCardId = (id) => `groupable-card-${id}`;
+
+window.addEventListener("phx:cards_grouped", (event) => {
+  const el = document.getElementById(groupableCardId(event.detail["card-id"]));
+  el.classList.add("invisible");
+})
+
+window.addEventListener("phx:card_removed_from_group", (event) => {
+  const el = document.getElementById(groupableCardId(event.detail["card-id"]));
+  el.classList.remove("invisible");
+})
+
+let Hooks = {};
+// Ungrouped cards are draggable
+// Stack bottoms and ungrouped cards are drag targets
+Hooks.GroupableCard = {
+  mounted() {
+    if (this.el.getAttribute("data-draggable") === "true") {
+      const id = this.el.getAttribute("data-card-id");
+      this.el.addEventListener("dragstart", (event) => {
+        event.dataTransfer.setData("text/plain", id);
+        event.dataTransfer.dropEffect = "move";
+      });
+    }
+    if (this.el.getAttribute("data-dragtarget") === "true") {
+      this.el.addEventListener("dragover", (event) => {
+        event.preventDefault();
+      });
+      this.el.addEventListener("drop", (event) => {
+        event.preventDefault();
+        const id = event.dataTransfer.getData("text/plain");
+        const onto = this.el.getAttribute("data-card-id");
+        if (onto !== id) {
+          document.getElementById(groupableCardId(id)).classList.add("invisible");
+          this.pushEvent("group_cards", {"card-id": id, "onto": onto});
+        }
+      });
+    }
+  }
+};
+
+let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
 let liveSocket = new LiveSocket("/live", Socket, {
   dom: {
     onBeforeElUpdated(from, to) {
       if (from._x_dataStack) {
-        window.Alpine.clone(from, to)
+        window.Alpine.clone(from, to);
       }
     }
   },
+  hooks: Hooks,
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken}
-})
+});
 
 // Show progress bar on live navigation and form submits
-topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
-window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
+topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"});
+window.addEventListener("phx:page-loading-start", _info => topbar.show(300));
+window.addEventListener("phx:page-loading-stop", _info => topbar.hide());
 
 // connect if there are any LiveViews on the page
-liveSocket.connect()
+liveSocket.connect();
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
-window.liveSocket = liveSocket
+window.liveSocket = liveSocket;
 

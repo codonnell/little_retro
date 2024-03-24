@@ -44,16 +44,12 @@ defmodule LittleRetroWeb.RetroComponents do
 
   def editable_card(assigns) do
     ~H"""
-    <form
-      phx-change="edit_card"
-      phx-value-card-id={@id}
-      phx-debouce="1000"
-      data-test={"edit-card-form-#{@id}"}
-    >
+    <form phx-change="edit_card" phx-value-card-id={@id} data-test={"edit-card-form-#{@id}"}>
       <span class="relative">
         <textarea
           id={"edit-card-textarea-#{@id}"}
           data-test={"edit-card-textarea-#{@id}"}
+          phx-debounce="1000"
           phx-update={
             if @is_author do
               "ignore"
@@ -93,11 +89,56 @@ defmodule LittleRetroWeb.RetroComponents do
   attr :grouped_onto, :map, required: true
 
   def groupable_card(assigns) do
+    drag_target = Map.get(assigns.grouped_onto, assigns.id, :missing) in [assigns.id, :missing]
+
+    assigns =
+      assign(assigns,
+        draggable: not Map.has_key?(assigns.grouped_onto, assigns.id),
+        drag_target: drag_target,
+        invisible: not drag_target
+      )
+
     ~H"""
-    <div class="overflow-hidden rounded bg-white shadow-lg">
-      <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
-        <%= @text %>
+    <div class="relative">
+      <div
+        class={"overflow-hidden rounded bg-white shadow-lg #{if @draggable do "cursor-pointer" end} #{if @invisible do "invisible" end}"}
+        id={"groupable-card-#{@id}"}
+        phx-update="ignore"
+        phx-hook="GroupableCard"
+        draggable={
+          if @draggable do
+            "true"
+          else
+            "false"
+          end
+        }
+        data-card-id={@id}
+        data-dragtarget={
+          if @drag_target do
+            "true"
+          else
+            "false"
+          end
+        }
+        data-draggable={
+          if @draggable do
+            "true"
+          else
+            "false"
+          end
+        }
+      >
+        <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+          <%= @text %>
+        </div>
       </div>
+      <%= if Map.has_key?(@groups, @id) do %>
+        <div class="overflow-hidden absolute -right-2 -top-2 -z-10 rounded bg-slate-100 shadow-lg">
+          <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+            <%= @text %>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end

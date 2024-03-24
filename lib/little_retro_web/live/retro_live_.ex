@@ -20,17 +20,19 @@ defmodule LittleRetroWeb.RetroLive do
         <%= for column <- @retro.column_order |> Enum.map(& @retro.columns[&1]) do %>
           <div class="grow">
             <h3 class="text-xl font-bold text-center"><%= column.label %></h3>
-            <div
-              class="text-center mt-4"
-              phx-click="create_card"
-              phx-value-column-id={column.id}
-              data-test={"create-card-column-#{column.id}"}
-            >
-              <.icon
-                name="hero-plus-circle"
-                class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
-              />
-            </div>
+            <%= if @retro.phase == :create_cards do %>
+              <div
+                class="text-center mt-4"
+                phx-click="create_card"
+                phx-value-column-id={column.id}
+                data-test={"create-card-column-#{column.id}"}
+              >
+                <.icon
+                  name="hero-plus-circle"
+                  class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
+                />
+              </div>
+            <% end %>
             <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
               <%= for card <- column.cards |> Enum.reverse() |> Enum.map(& @retro.cards[&1]) do %>
                 <li class="divide-y" data-test={"card-list-item-#{card.id}"}>
@@ -97,6 +99,20 @@ defmodule LittleRetroWeb.RetroLive do
       end
 
     {:noreply, socket}
+  end
+
+  def handle_info({:cards_grouped, %{card_id: card_id, retro: retro}}, socket) do
+    {:noreply,
+     socket
+     |> assign(:retro, retro)
+     |> push_event("cards_grouped", %{"card-id" => card_id})}
+  end
+
+  def handle_info({:card_removed_from_group, %{card_id: card_id, retro: retro}}, socket) do
+    {:noreply,
+     socket
+     |> assign(:retro, retro)
+     |> push_event("card_removed_from_group", %{"card-id" => card_id})}
   end
 
   def handle_event("validate_email", %{"user" => user_params}, socket) do
@@ -211,8 +227,6 @@ defmodule LittleRetroWeb.RetroLive do
     else
       {:noreply, redirect_unauthorized(socket)}
     end
-
-    {:noreply, socket}
   end
 
   def handle_event("change_phase", %{"to" => to}, socket) do
@@ -233,6 +247,29 @@ defmodule LittleRetroWeb.RetroLive do
        |> assign(:retro, retro)}
     else
       {:noreply, put_flash(socket, :error, "Only the moderator can change phase.")}
+    end
+  end
+
+  def handle_event("group_cards", %{"card-id" => card_id, "onto" => onto}, socket) do
+    card_id = String.to_integer(card_id)
+    onto = String.to_integer(onto)
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id or user.email in retro.user_emails do
+      case Retros.group_cards(retro.retro_id, %{
+             card_id: card_id,
+             user_id: user.id,
+             onto: onto
+           }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
+    else
+      {:noreply, redirect_unauthorized(socket)}
     end
   end
 

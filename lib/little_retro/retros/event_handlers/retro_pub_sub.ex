@@ -40,12 +40,15 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
     broadcast_retro(retro_id)
   end
 
-  def handle(%CardsGrouped{retro_id: retro_id}, _metadata) do
-    broadcast_retro(retro_id)
+  def handle(event = %CardsGrouped{retro_id: retro_id}, _metadata) do
+    broadcast(retro_id, {:cards_grouped, %{card_id: event.card_id, retro: Retros.get(retro_id)}})
   end
 
-  def handle(%CardRemovedFromGroup{retro_id: retro_id}, _metadata) do
-    broadcast_retro(retro_id)
+  def handle(event = %CardRemovedFromGroup{retro_id: retro_id}, _metadata) do
+    broadcast(
+      retro_id,
+      {:card_removed_from_group, %{card_id: event.card_id, retro: Retros.get(retro_id)}}
+    )
   end
 
   defp broadcast_retro(retro_id) do

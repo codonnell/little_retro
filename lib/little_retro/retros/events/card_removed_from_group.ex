@@ -1,6 +1,6 @@
 defmodule LittleRetro.Retros.Events.CardRemovedFromGroup do
-  alias LittleRetro.Retros.Aggregates.Retro.Card
   @derive Jason.Encoder
+  alias LittleRetro.Retros.Aggregates.Retro.Card
   use TypedStruct
 
   typedstruct do
