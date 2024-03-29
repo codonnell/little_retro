@@ -28,9 +28,9 @@
     - [x] Make stacks expandable client-side (probably alpine.js, but maybe LiveView.JS)
     - [x] Drag cards out of an expanded stack OR click to remove a card from an expanded stack
     - [ ] Label stacks
-- [ ] Voting for cards
-  - [ ] Write voting domain functions
-  - [ ] Write voting UI
+- [x] Voting for cards
+  - [x] Write voting domain functions
+  - [x] Write voting UI
 - [ ] Discussion
   - [ ] Write discussion domain functions
   - [ ] Write discussion UI

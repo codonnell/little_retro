@@ -18,7 +18,7 @@ defmodule LittleRetroWeb.PageLive do
 
     case Retros.create_retro(moderator_id) do
       {:ok, id} ->
-        {:noreply, push_navigate(socket, to: "/retros/#{id}/create_cards")}
+        {:noreply, push_navigate(socket, to: "/retros/#{id}")}
 
       {:error, err} ->
         Logger.error("Failed to create retro: #{inspect(err)}")

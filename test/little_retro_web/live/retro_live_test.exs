@@ -168,9 +168,70 @@ defmodule LittleRetroWeb.RetroLiveTest do
     end
   end
 
+  describe "vote for card" do
+    test "can vote for single card", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("voteable-card-0") |> render_click()
+
+      assert view |> has_element?(data_test_sel("vote-circle-0-0"))
+    end
+
+    test "can vote for group of cards", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :group_cards, user_id: user.id})
+      :ok = Retros.group_cards(retro_id, %{user_id: user.id, card_id: 1, onto: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("voteable-card-0") |> render_click()
+
+      assert view |> has_element?(data_test_sel("vote-circle-0-0"))
+    end
+  end
+
+  describe "remove vote from card" do
+    test "can remove vote from single card", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("vote-circle-0-0") |> render_click()
+
+      refute view |> has_element?(data_test_sel("vote-circle-0-0"))
+    end
+
+    test "can remove vote from group of cards", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :group_cards, user_id: user.id})
+      :ok = Retros.group_cards(retro_id, %{user_id: user.id, card_id: 1, onto: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("vote-circle-0-0") |> render_click()
+
+      refute view |> has_element?(data_test_sel("vote-circle-0-0"))
+    end
+  end
+
   defp wait_for(view, msg) do
     # Ensure pubsub message has been broadcast
     assert_receive {^msg, _}
+
+    # Sleep a very short time to increase probability pubsub message has been received by liveview process
+    # Not my favorite, but seems ok for a small number of tests
+    :timer.sleep(10)
+
     # Send message to liveview process to ensure liveview has processed pubsub message
     _ = :sys.get_state(view.pid)
   end

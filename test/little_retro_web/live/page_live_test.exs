@@ -26,7 +26,7 @@ defmodule LittleRetroWeb.PageLiveTest do
           e in ArgumentError ->
             captures =
               Regex.named_captures(
-                ~r/got a redirect to "\/retros\/(?<id>[\w]{8}-[\w]{4}-[\w]{4}-[\w]{4}-[\w]{12})\/create_cards"/,
+                ~r/got a redirect to "\/retros\/(?<id>[\w]{8}-[\w]{4}-[\w]{4}-[\w]{4}-[\w]{12})"/,
                 e.message
               )
 

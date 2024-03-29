@@ -108,7 +108,7 @@ defmodule LittleRetroWeb.RetroComponents do
 
     ~H"""
     <%= if @bottom_card do %>
-      <.expanded_card_group_modal cards={@card_group} />
+      <.expanded_card_group_modal cards={@card_group} include_remove_button={true} />
     <% end %>
     <div class="relative">
       <div
@@ -146,7 +146,82 @@ defmodule LittleRetroWeb.RetroComponents do
     """
   end
 
+  # TODO: Pass a more targeted set of attributes
+
+  attr :id, :integer, required: true
+  attr :cards, :map, required: true
+  attr :groups, :map, required: true
+  attr :grouped_onto, :map, required: true
+  attr :votes, :list, required: true
+
+  def voteable_card(assigns) do
+    assigns =
+      assign(assigns,
+        bottom_card: Map.get(assigns.grouped_onto, assigns.id) == assigns.id,
+        voteable: Map.get(assigns.grouped_onto, assigns.id, :missing) in [assigns.id, :missing],
+        card_group:
+          if Map.has_key?(assigns.groups, assigns.id) do
+            assigns.groups[assigns.id][:cards]
+            |> Enum.map(fn id -> assigns.cards[id] end)
+            |> Enum.reverse()
+          end
+      )
+
+    ~H"""
+    <%= if @bottom_card do %>
+      <.expanded_card_group_modal cards={@card_group} />
+    <% end %>
+    <div class="relative">
+      <div class="absolute -top-6 flex space-x-1">
+        <%= for {_, i} <- Enum.filter(@votes, & &1 == @id) |> Enum.with_index() do %>
+          <span
+            class="group"
+            phx-click="remove_vote_from_card"
+            phx-value-card-id={@id}
+            data-test={"vote-circle-#{@id}-#{i}"}
+          >
+            <.icon
+              name="hero-check-circle"
+              class="h-4 w-4 text-blue-600 cursor-pointer group-hover:hidden"
+            />
+            <.icon
+              name="hero-x-circle"
+              class="h-4 w-4 text-red-500 cursor-pointer hidden group-hover:inline-block"
+            />
+          </span>
+        <% end %>
+      </div>
+      <div class={"overflow-hidden rounded bg-white shadow-lg hover:shadow-xl hover:ring-1 ring-gray-300 #{if @voteable do "cursor-pointer" else "invisible" end}"}>
+        <div
+          class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-test={"voteable-card-#{@id}"}
+          phx-click="vote_for_card"
+          phx-value-card-id={@id}
+        >
+          <%= @cards[@id].text %>
+        </div>
+        <%= if @bottom_card do %>
+          <span phx-click={show_modal("expanded-card-group-modal-#{@id}")}>
+            <.icon
+              name="hero-arrows-pointing-out"
+              class="absolute h-4 w-4 top-0.5 right-0.5 text-slate-300 cursor-pointer hover:text-slate-500"
+            />
+          </span>
+        <% end %>
+      </div>
+      <%= if @bottom_card do %>
+        <div class="overflow-hidden absolute -right-2 -top-2 -z-10 rounded bg-slate-100 shadow-lg">
+          <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+            <%= @cards[@id].text %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
   attr :cards, :list, required: true
+  attr :include_remove_button, :boolean, default: false
 
   def expanded_card_group_modal(assigns) do
     ~H"""
@@ -158,18 +233,20 @@ defmodule LittleRetroWeb.RetroComponents do
               <div class="px-3 py-1.5 w-52 min-h-9 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
                 <%= card.text %>
               </div>
-              <span
-                phx-click={
-                  JS.push("remove_card_from_group")
-                  |> JS.add_class("hidden", to: "#expanded-card-group-list-item-#{card.id}")
-                }
-                phx-value-card-id={card.id}
-              >
-                <.icon
-                  name="hero-x-mark"
-                  class="absolute h-4 w-4 top-0.5 right-0.5 text-red-200 cursor-pointer hover:text-red-400"
-                />
-              </span>
+              <%= if @include_remove_button do %>
+                <span
+                  phx-click={
+                    JS.push("remove_card_from_group")
+                    |> JS.add_class("hidden", to: "#expanded-card-group-list-item-#{card.id}")
+                  }
+                  phx-value-card-id={card.id}
+                >
+                  <.icon
+                    name="hero-x-mark"
+                    class="absolute h-4 w-4 top-0.5 right-0.5 text-red-200 cursor-pointer hover:text-red-400"
+                  />
+                </span>
+              <% end %>
             </div>
           </li>
         <% end %>
