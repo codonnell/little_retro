@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.CreateActionItem
   alias LittleRetro.Retros.Commands.RemoveVoteFromCard
   alias LittleRetro.Retros.Commands.VoteForCard
   alias LittleRetro.Retros.Commands.RemoveCardFromGroup
@@ -189,6 +190,19 @@ defmodule LittleRetro.Retros do
            retro_id: retro_id,
            user_id: user_id,
            card_id: card_id
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  @spec create_action_item(retro_id :: String.t(), %{author_id: integer()}) ::
+          :ok | {:error, atom()}
+
+  def create_action_item(retro_id, %{author_id: author_id}) do
+    case CommandedApplication.dispatch(%CreateActionItem{
+           retro_id: retro_id,
+           author_id: author_id
          }) do
       {:error, err} -> {:error, err}
       _ -> :ok

@@ -452,4 +452,29 @@ defmodule LittleRetro.RetrosTest do
       assert {:error, _} = Retros.remove_vote_from_card(retro_id, %{user_id: user.id, card_id: 0})
     end
   end
+
+  describe "create_action_item/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "moderator can create action item", %{retro_id: retro_id, user: user} do
+      assert :ok == Retros.create_action_item(retro_id, %{author_id: user.id})
+    end
+
+    test "non moderator cannot create action item", %{retro_id: retro_id} do
+      other_user = user_fixture()
+      :ok = Retros.add_user(retro_id, other_user.email)
+
+      assert {:error, :unauthorized} ==
+               Retros.create_action_item(retro_id, %{author_id: other_user.id})
+    end
+
+    test "cannot create action item out of discussion phase", %{retro_id: retro_id, user: user} do
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      assert {:error, _} = Retros.create_action_item(retro_id, %{author_id: user.id})
+    end
+  end
 end

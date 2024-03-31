@@ -38,14 +38,16 @@
   - [ ] Write action item domain functions
   - [ ] Write action item UI
 - [ ] See currently active retros on homepage
-- [ ] List completed retros (show action items?)
-- [ ] Navigate to completed retros (ready only mode?)
+- [ ] Delete unused header entries
+- [ ] Deploy
+
 
 ## Later
 
 - [x] Write README
+- [ ] List completed retros (show action items?)
+- [ ] Navigate to completed retros (ready only mode?)
 - [ ] After a user is removed, they are redirected from the liveview if they try to do an action
-- [ ] Make real header
 - [ ] Make styling consistent between tailwind-ui and generated phoenix components
 
 ## Questions

@@ -1,4 +1,7 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  alias LittleRetro.Retros.Aggregates.Retro.ActionItem
+  alias LittleRetro.Retros.Events.ActionItemCreated
+  alias LittleRetro.Retros.Commands.CreateActionItem
   alias LittleRetro.Retros.Events.UserRemovedVoteFromCard
   alias LittleRetro.Retros.Commands.RemoveVoteFromCard
   alias LittleRetro.Retros.Commands.VoteForCard
@@ -39,6 +42,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     field :phase, phase(), enforce: true
     field :votes_by_card_id, %{Card.id() => [integer()]}, enforce: true, default: %{}
     field :votes_by_user_id, %{integer() => [Card.id()]}, enforce: true, default: %{}
+    field :action_items, %{integer() => %ActionItem{}}, enforce: true, default: %{}
   end
 
   def execute(%__MODULE__{retro_id: nil, moderator_id: nil}, %CreateRetro{
@@ -251,6 +255,24 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :incorrect_phase}
   end
 
+  def execute(
+        retro = %__MODULE__{phase: :discussion},
+        %CreateActionItem{author_id: author_id}
+      ) do
+    cond do
+      author_id != retro.moderator_id ->
+        {:error, :unauthorized}
+
+      true ->
+        id = (retro.action_items |> Map.keys() |> Enum.max(fn -> -1 end)) + 1
+        %ActionItemCreated{id: id, retro_id: retro.retro_id, author_id: author_id}
+    end
+  end
+
+  def execute(%__MODULE__{}, %ActionItemCreated{}) do
+    {:error, :incorrect_phase}
+  end
+
   def execute(%__MODULE__{}, _command) do
     {:error, :unrecognized_command}
   end
@@ -271,7 +293,8 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       groups: %{},
       grouped_onto: %{},
       votes_by_card_id: %{},
-      votes_by_user_id: %{}
+      votes_by_user_id: %{},
+      action_items: %{}
     }
   end
 
@@ -380,6 +403,17 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       | votes_by_user_id: votes_by_user_id,
         votes_by_card_id: votes_by_card_id
     }
+  end
+
+  def apply(retro = %__MODULE__{}, %ActionItemCreated{
+        id: id,
+        author_id: author_id
+      }) do
+    put_in(retro, [Access.key!(:action_items), Access.key(id)], %ActionItem{
+      id: id,
+      author_id: author_id,
+      text: ""
+    })
   end
 
   defp reject_first(enumerable, pred) do
