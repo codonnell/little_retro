@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.EditActionItemText
   alias LittleRetro.Retros.Commands.CreateActionItem
   alias LittleRetro.Retros.Commands.RemoveVoteFromCard
   alias LittleRetro.Retros.Commands.VoteForCard
@@ -203,6 +204,25 @@ defmodule LittleRetro.Retros do
     case CommandedApplication.dispatch(%CreateActionItem{
            retro_id: retro_id,
            author_id: author_id
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  @spec edit_action_item_text(retro_id :: String.t(), %{
+          id: integer(),
+          author_id: integer(),
+          text: String.t()
+        }) ::
+          :ok | {:error, atom()}
+
+  def edit_action_item_text(retro_id, %{id: id, author_id: author_id, text: text}) do
+    case CommandedApplication.dispatch(%EditActionItemText{
+           retro_id: retro_id,
+           author_id: author_id,
+           id: id,
+           text: text
          }) do
       {:error, err} -> {:error, err}
       _ -> :ok

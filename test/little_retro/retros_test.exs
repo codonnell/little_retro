@@ -1,4 +1,5 @@
 defmodule LittleRetro.RetrosTest do
+  alias LittleRetro.Retros.Aggregates.Retro.ActionItem
   alias LittleRetro.Retros.Aggregates.Retro.Card
   alias LittleRetro.Retros.Aggregates.Retro
   alias LittleRetro.Accounts.User
@@ -456,12 +457,15 @@ defmodule LittleRetro.RetrosTest do
   describe "create_action_item/2" do
     setup do
       %{retro_id: retro_id, user: user} = retro_fixture()
-      Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
       %{retro_id: retro_id, user: user}
     end
 
     test "moderator can create action item", %{retro_id: retro_id, user: user} do
       assert :ok == Retros.create_action_item(retro_id, %{author_id: user.id})
+      retro = Retros.get(retro_id)
+      user_id = user.id
+      assert %ActionItem{id: 0, author_id: ^user_id, text: ""} = retro.action_items[0]
     end
 
     test "non moderator cannot create action item", %{retro_id: retro_id} do
@@ -475,6 +479,48 @@ defmodule LittleRetro.RetrosTest do
     test "cannot create action item out of discussion phase", %{retro_id: retro_id, user: user} do
       :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
       assert {:error, _} = Retros.create_action_item(retro_id, %{author_id: user.id})
+    end
+  end
+
+  describe "edit_action_item_text/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      :ok = Retros.create_action_item(retro_id, %{author_id: user.id})
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "moderator can edit action item text", %{retro_id: retro_id, user: user} do
+      assert :ok ==
+               Retros.edit_action_item_text(retro_id, %{
+                 id: 0,
+                 author_id: user.id,
+                 text: "Teach pet monkey to use ChatGPT"
+               })
+    end
+
+    test "non moderator cannot edit action item text", %{retro_id: retro_id} do
+      other_user = user_fixture()
+      :ok = Retros.add_user(retro_id, other_user.email)
+
+      assert {:error, :unauthorized} ==
+               Retros.edit_action_item_text(retro_id, %{
+                 id: 0,
+                 author_id: other_user.id,
+                 text: "nope"
+               })
+    end
+
+    test "cannot create action item out of discussion phase", %{retro_id: retro_id, user: user} do
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+
+      assert {:error, _} =
+               Retros.edit_action_item_text(retro_id, %{id: 0, author_id: user.id, text: "nope"})
+    end
+
+    test "cannot edit non existent action item", %{retro_id: retro_id, user: user} do
+      assert {:error, _} =
+               Retros.edit_action_item_text(retro_id, %{id: -1, author_id: user.id, text: "nope"})
     end
   end
 end
