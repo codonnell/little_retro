@@ -523,4 +523,44 @@ defmodule LittleRetro.RetrosTest do
                Retros.edit_action_item_text(retro_id, %{id: -1, author_id: user.id, text: "nope"})
     end
   end
+
+  describe "remove_action_item/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      :ok = Retros.create_action_item(retro_id, %{author_id: user.id})
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "moderator can remove an action item", %{retro_id: retro_id, user: user} do
+      assert :ok ==
+               Retros.remove_action_item(retro_id, %{
+                 id: 0,
+                 author_id: user.id
+               })
+    end
+
+    test "non moderator cannot remove action item", %{retro_id: retro_id} do
+      other_user = user_fixture()
+      :ok = Retros.add_user(retro_id, other_user.email)
+
+      assert {:error, :unauthorized} ==
+               Retros.remove_action_item(retro_id, %{
+                 id: 0,
+                 author_id: other_user.id
+               })
+    end
+
+    test "cannot remove action item out of discussion phase", %{retro_id: retro_id, user: user} do
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+
+      assert {:error, _} =
+               Retros.remove_action_item(retro_id, %{id: 0, author_id: user.id})
+    end
+
+    test "cannot remove non existent action item", %{retro_id: retro_id, user: user} do
+      assert {:error, _} =
+               Retros.remove_action_item(retro_id, %{id: -1, author_id: user.id})
+    end
+  end
 end
