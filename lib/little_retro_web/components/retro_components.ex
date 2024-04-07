@@ -37,6 +37,45 @@ defmodule LittleRetroWeb.RetroComponents do
     """
   end
 
+  attr :id, :integer, required: true
+  attr :text, :string, required: true
+
+  def editable_action_item(assigns) do
+    ~H"""
+    <form
+      phx-change="edit_action_item"
+      phx-value-action-item-id={@id}
+      data-test={"edit-action-item-form-#{@id}"}
+    >
+      <span class="relative">
+        <textarea
+          id={"edit-action-item-textarea-#{@id}"}
+          data-test={"edit-action-item-textarea-#{@id}"}
+          phx-debounce="1000"
+          phx-update="ignore"
+          name="text"
+          maxlength="255"
+          x-data="{ resize: () => { $el.style.height = '4px'; $el.style.height = $el.scrollHeight + 'px' } }"
+          x-init="resize()"
+          @input="resize()"
+          class="block h-9 resize-none w-full rounded border-0 py-1.5 bg-indigo-50 text-gray-900 shadow-lg ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+          placeholder="Take action"
+        ><%= @text %></textarea>
+        <span
+          phx-click="delete_action_item_by_id"
+          phx-value-action-item-id={@id}
+          data-test={"delete-action-item-button-#{@id}"}
+        >
+          <.icon
+            name="hero-trash"
+            class="absolute h-4 w-4 top-0.5 right-0.5 text-red-200 cursor-pointer hover:text-red-400"
+          />
+        </span>
+      </span>
+    </form>
+    """
+  end
+
   attr :is_author, :boolean, required: true
   attr :id, :integer, required: true
   attr :text, :string, required: true

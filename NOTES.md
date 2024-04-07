@@ -31,3 +31,4 @@ We use Phoenix PubSub to distribute live updates to all users actively on the re
 
 * Users go through the cards in order from most votes to least votes
 * Users can create action items
+* Could we allow users to write notes for a group of cards to capture non-action item discussion?

@@ -47,6 +47,8 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     field :votes_by_card_id, %{Card.id() => [integer()]}, enforce: true, default: %{}
     field :votes_by_user_id, %{integer() => [Card.id()]}, enforce: true, default: %{}
     field :action_items, %{integer() => %ActionItem{}}, enforce: true, default: %{}
+    field :card_ids_to_discuss, [Card.id()], enforce: true, default: []
+    field :card_ids_discussed, [Card.id()], enforce: true, default: []
   end
 
   def execute(%__MODULE__{retro_id: nil, moderator_id: nil}, %CreateRetro{
@@ -327,9 +329,9 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       phase: :create_cards,
       moderator_id: moderator_id,
       columns: %{
-        0 => %Column{id: 0, label: "Start", cards: []},
-        1 => %Column{id: 1, label: "Stop", cards: []},
-        2 => %Column{id: 2, label: "Continue", cards: []}
+        0 => %Column{id: 0, label: "Mad", cards: []},
+        1 => %Column{id: 1, label: "Sad", cards: []},
+        2 => %Column{id: 2, label: "Glad", cards: []}
       },
       column_order: [0, 1, 2],
       user_emails: [],
@@ -338,7 +340,9 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       grouped_onto: %{},
       votes_by_card_id: %{},
       votes_by_user_id: %{},
-      action_items: %{}
+      action_items: %{},
+      card_ids_to_discuss: [],
+      card_ids_discussed: []
     }
   end
 
@@ -392,6 +396,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
 
     case to do
       :vote -> change_phase_to_vote(retro)
+      :discussion -> change_phase_to_discussion(retro)
       _ -> %__MODULE__{retro | phase: to}
     end
   end
@@ -561,6 +566,28 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
 
   defp change_phase_to_vote(retro = %__MODULE__{}) do
     %__MODULE__{retro | votes_by_card_id: %{}, votes_by_user_id: %{}, phase: :vote}
+  end
+
+  defp change_phase_to_discussion(retro = %__MODULE__{}) do
+    card_ids = Map.keys(retro.cards)
+
+    card_ids_by_vote_count =
+      retro.votes_by_card_id
+      |> Enum.map(fn {card_id, votes} -> {card_id, Enum.count(votes)} end)
+      |> Enum.sort_by(fn {_card_id, num_votes} -> num_votes end, :desc)
+      |> Enum.map(fn {card_id, _} -> card_id end)
+
+    card_ids_with_no_votes =
+      Enum.reject(card_ids, fn card_id -> card_id in card_ids_by_vote_count end) |> Enum.sort()
+
+    card_ids_to_discuss = card_ids_by_vote_count ++ card_ids_with_no_votes
+
+    %__MODULE__{
+      retro
+      | phase: :discussion,
+        card_ids_to_discuss: card_ids_to_discuss,
+        card_ids_discussed: []
+    }
   end
 
   defp middle_card_in_group?(retro = %__MODULE__{}, card_id) do

@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
+  alias LittleRetro.Retros.Events.ActionItemRemoved
   alias LittleRetro.Retros.Events.ActionItemTextEdited
   alias LittleRetro.Retros.Events.ActionItemCreated
   alias LittleRetro.Retros.Events.UserRemovedVoteFromCard
@@ -69,6 +70,10 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
   end
 
   def handle(%ActionItemTextEdited{retro_id: retro_id}, _metadata) do
+    broadcast_retro(retro_id)
+  end
+
+  def handle(%ActionItemRemoved{retro_id: retro_id}, _metadata) do
     broadcast_retro(retro_id)
   end
 

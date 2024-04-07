@@ -16,59 +16,89 @@ defmodule LittleRetroWeb.RetroLive do
     <div class="h-screen flex flex-col">
       <RetroComponents.header is_moderator={@is_moderator} phase={@retro.phase} />
       <RetroUsers.retro_users_modal email_form={@email_form} user_emails={@retro.user_emails} />
-      <div class="flex mt-8 divide-x-2 grow">
-        <%= for column <- @retro.column_order |> Enum.map(& @retro.columns[&1]) do %>
-          <div class="grow">
-            <h3 class="text-xl font-bold text-center"><%= column.label %></h3>
-            <%= if @retro.phase == :create_cards do %>
-              <div
-                class="text-center mt-4"
-                phx-click="create_card"
-                phx-value-column-id={column.id}
-                data-test={"create-card-column-#{column.id}"}
-              >
-                <.icon
-                  name="hero-plus-circle"
-                  class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
-                />
-              </div>
-            <% end %>
-            <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
-              <%= for card <- column.cards |> Enum.reverse() |> Enum.map(& @retro.cards[&1]) do %>
-                <li class="divide-y" data-test={"card-list-item-#{card.id}"}>
-                  <%= case @retro.phase do %>
-                    <% :create_cards -> %>
-                      <RetroComponents.editable_card
-                        is_author={card.author_id == @current_user.id}
-                        id={card.id}
-                        text={card.text}
-                        column_id={column.id}
-                      />
-                    <% :group_cards -> %>
-                      <RetroComponents.groupable_card
-                        id={card.id}
-                        text={card.text}
-                        cards={@retro.cards}
-                        groups={@retro.groups}
-                        grouped_onto={@retro.grouped_onto}
-                      />
-                    <% :vote -> %>
-                      <RetroComponents.voteable_card
-                        id={card.id}
-                        cards={@retro.cards}
-                        groups={@retro.groups}
-                        grouped_onto={@retro.grouped_onto}
-                        votes={Map.get(@retro.votes_by_user_id, @current_user.id, [])}
-                      />
-                    <% _ -> %>
-                      <div>Placeholder</div>
-                  <% end %>
-                </li>
+      <%= if @retro.phase in [:create_cards, :group_cards, :vote] do %>
+        <div class="flex mt-8 divide-x-2 grow">
+          <%= for column <- @retro.column_order |> Enum.map(& @retro.columns[&1]) do %>
+            <div class="grow">
+              <h3 class="text-xl font-bold text-center"><%= column.label %></h3>
+              <%= if @retro.phase == :create_cards do %>
+                <div
+                  class="text-center mt-4"
+                  phx-click="create_card"
+                  phx-value-column-id={column.id}
+                  data-test={"create-card-column-#{column.id}"}
+                >
+                  <.icon
+                    name="hero-plus-circle"
+                    class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
+                  />
+                </div>
               <% end %>
+              <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
+                <%= for card <- column.cards |> Enum.reverse() |> Enum.map(& @retro.cards[&1]) do %>
+                  <li class="divide-y" data-test={"card-list-item-#{card.id}"}>
+                    <%= case @retro.phase do %>
+                      <% :create_cards -> %>
+                        <RetroComponents.editable_card
+                          is_author={card.author_id == @current_user.id}
+                          id={card.id}
+                          text={card.text}
+                          column_id={column.id}
+                        />
+                      <% :group_cards -> %>
+                        <RetroComponents.groupable_card
+                          id={card.id}
+                          text={card.text}
+                          cards={@retro.cards}
+                          groups={@retro.groups}
+                          grouped_onto={@retro.grouped_onto}
+                        />
+                      <% :vote -> %>
+                        <RetroComponents.voteable_card
+                          id={card.id}
+                          cards={@retro.cards}
+                          groups={@retro.groups}
+                          grouped_onto={@retro.grouped_onto}
+                          votes={Map.get(@retro.votes_by_user_id, @current_user.id, [])}
+                        />
+                      <% _ -> %>
+                        <div>Placeholder</div>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div>
+          <%= if @is_moderator do %>
+            <div
+              class="text-center mt-4"
+              phx-click="create_action_item"
+              data-test="create-action-item"
+            >
+              <.icon
+                name="hero-plus-circle"
+                class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
+              />
+            </div>
+            <ul role="list" class="divide-y divide-gray-100">
+              <li
+                :for={
+                  action_item <-
+                    Map.keys(@retro.action_items)
+                    |> Enum.sort()
+                    |> Enum.map(&Map.get(@retro.action_items, &1))
+                }
+                class="flex gap-x-4 py-5"
+              >
+                <RetroComponents.editable_action_item id={action_item.id} text={action_item.text} />
+              </li>
             </ul>
-          </div>
-        <% end %>
-      </div>
+          <% end %>
+        </div>
+      <% end %>
     </div>
     """
   end
@@ -333,6 +363,71 @@ defmodule LittleRetroWeb.RetroLive do
       case Retros.remove_vote_from_card(retro.retro_id, %{
              card_id: card_id,
              user_id: user.id
+           }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+  end
+
+  def handle_event("create_action_item", _params, socket) do
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id do
+      case Retros.create_action_item(retro.retro_id, %{author_id: user.id}) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+  end
+
+  def handle_event(
+        "edit_action_item",
+        %{"action-item-id" => action_item_id, "text" => text},
+        socket
+      ) do
+    action_item_id = String.to_integer(action_item_id)
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id do
+      case Retros.edit_action_item_text(retro.retro_id, %{
+             author_id: user.id,
+             id: action_item_id,
+             text: text
+           }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+  end
+
+  # TODO: Make naming consistent between card and action item (delete vs. remove)
+  def handle_event("delete_action_item_by_id", %{"action-item-id" => action_item_id}, socket) do
+    action_item_id = String.to_integer(action_item_id)
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id do
+      case Retros.remove_action_item(retro.retro_id, %{
+             author_id: user.id,
+             id: action_item_id
            }) do
         {:error, err} -> Logger.error(err)
         _ -> nil
