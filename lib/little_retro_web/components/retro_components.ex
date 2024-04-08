@@ -12,7 +12,7 @@ defmodule LittleRetroWeb.RetroComponents do
         <%= for phase <- Retros.phases() do %>
           <% selected = phase[:id] == @phase %>
           <div
-            class={"py-3 px-6 grow text-center border-white rounded-t-md cursor-pointer transition ease-in-out #{if selected do "bg-slate-100" else "bg-slate-300 hover:bg-slate-200" end}"}
+            class={"py-3 px-6 grow font-bold text-center border-white rounded-t-md cursor-pointer transition ease-in-out #{if selected do "bg-slate-100" else "bg-slate-300 hover:bg-slate-200" end}"}
             data-test={"header-tab-#{phase[:id]}"}
             phx-click="change_phase"
             phx-value-to={phase[:id]}
@@ -73,6 +73,22 @@ defmodule LittleRetroWeb.RetroComponents do
         </span>
       </span>
     </form>
+    """
+  end
+
+  attr :id, :integer, required: true
+  attr :text, :string, required: true
+
+  def read_only_action_item(assigns) do
+    ~H"""
+    <div class="overflow-hidden rounded bg-white shadow-lg hover:shadow-xl hover:ring-1 ring-gray-300">
+      <div
+        class="px-3 py-1.5 w-52 min-h-9 h-full border-0 bg-indigo-50 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+        data-test={"read-only-action-item-#{@id}"}
+      >
+        <%= @text %>
+      </div>
+    </div>
     """
   end
 

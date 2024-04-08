@@ -34,9 +34,11 @@
 - [ ] Discussion
   - [ ] Write discussion domain functions
   - [ ] Write discussion UI
-- [ ] Action items
-  - [ ] Write action item domain functions
-  - [ ] Write action item UI
+    - [x] Fix vertical alignment of cards being discussed
+    - [x] Display read-only action items for non-moderators
+- [x] Action items
+  - [x] Write action item domain functions
+  - [x] Write action item UI
 - [ ] See currently active retros on homepage
 - [ ] Delete unused header entries
 - [ ] Deploy
