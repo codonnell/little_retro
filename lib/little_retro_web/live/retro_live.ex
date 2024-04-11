@@ -72,7 +72,10 @@ defmodule LittleRetroWeb.RetroLive do
         </div>
       <% else %>
         <div class="grow flex flex-row h-full">
-          <div class="grow flex flex-col mt-16">
+          <span class={"p-1 self-center cursor-pointer border rounded-md border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900 #{if Enum.empty?(@retro.card_ids_discussed) do "invisible" end}"}>
+            <.icon name="hero-arrow-left" class="h-12 w-12" />
+          </span>
+          <div class="grow flex flex-col mt-16 relative">
             <%= unless Enum.empty?(@retro.cards) do %>
               <% card_id = hd(@retro.card_ids_to_discuss) %>
               <% card_ids =
@@ -83,7 +86,7 @@ defmodule LittleRetroWeb.RetroLive do
               <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
                 <li :for={card <- cards} class="divide-y">
                   <div class="relative overflow-hidden rounded bg-white shadow-lg w-52 min-h-9 ">
-                    <div class="px-3 py-1.5 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+                    <div class="px-3 py-1.5 h-full min-h-9 border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
                       <%= card.text %>
                     </div>
                   </div>
@@ -91,14 +94,24 @@ defmodule LittleRetroWeb.RetroLive do
               </ul>
             <% end %>
           </div>
-          <div>
-            <div class="text-center mt-4 flex flex-row items-center gap-x-2">
-              <span class="text-xl font-bold">Action Items</span>
+          <span
+            class={"p-1 self-center cursor-pointer border rounded-md border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900 #{if Enum.count(@retro.card_ids_to_discuss) < 2 do "invisible" end}"}
+            phx-click="advance_discussion"
+          >
+            <.icon name="hero-arrow-right" class="h-12 w-12" />
+          </span>
+          <div class="mt-4 ml-8 pl-8 border-l-2">
+            <div class="w-52 text-center mt-4 flex flex-row items-center gap-x-2">
+              <span class="text-2xl font-bold">Action Items</span>
               <%= if @is_moderator do %>
-                <span phx-click="create_action_item" data-test="create-action-item">
+                <span
+                  class="p-1 border rounded-md hover:bg-gray-50"
+                  phx-click="create_action_item"
+                  data-test="create-action-item"
+                >
                   <.icon
-                    name="hero-plus-circle"
-                    class="h-8 w-8 cursor-pointer text-slate-500 hover:text-slate-700"
+                    name="hero-plus"
+                    class="h-6 w-6 cursor-pointer text-slate-500 hover:text-slate-700"
                   />
                 </span>
               <% end %>
@@ -454,6 +467,23 @@ defmodule LittleRetroWeb.RetroLive do
              author_id: user.id,
              id: action_item_id
            }) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+  end
+
+  def handle_event("advance_discussion", _, socket) do
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id do
+      case Retros.advance_discussion(retro.retro_id, %{user_id: user.id}) do
         {:error, err} -> Logger.error(err)
         _ -> nil
       end
