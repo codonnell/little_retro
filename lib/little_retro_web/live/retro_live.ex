@@ -73,21 +73,23 @@ defmodule LittleRetroWeb.RetroLive do
       <% else %>
         <div class="grow flex flex-row h-full">
           <div class="grow flex flex-col mt-16">
-            <% card_id = hd(@retro.card_ids_to_discuss) %>
-            <% card_ids =
-              if Map.has_key?(@retro.groups, card_id),
-                do: @retro.groups[card_id][:cards],
-                else: [card_id] %>
-            <% cards = Enum.map(card_ids, &@retro.cards[&1]) %>
-            <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
-              <li :for={card <- cards} class="divide-y">
-                <div class="relative overflow-hidden rounded bg-white shadow-lg w-52 min-h-9 ">
-                  <div class="px-3 py-1.5 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
-                    <%= card.text %>
+            <%= unless Enum.empty?(@retro.cards) do %>
+              <% card_id = hd(@retro.card_ids_to_discuss) %>
+              <% card_ids =
+                if Map.has_key?(@retro.groups, card_id),
+                  do: @retro.groups[card_id][:cards],
+                  else: [card_id] %>
+              <% cards = Enum.map(card_ids, &@retro.cards[&1]) %>
+              <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
+                <li :for={card <- cards} class="divide-y">
+                  <div class="relative overflow-hidden rounded bg-white shadow-lg w-52 min-h-9 ">
+                    <div class="px-3 py-1.5 h-full border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+                      <%= card.text %>
+                    </div>
                   </div>
-                </div>
-              </li>
-            </ul>
+                </li>
+              </ul>
+            <% end %>
           </div>
           <div>
             <div class="text-center mt-4 flex flex-row items-center gap-x-2">

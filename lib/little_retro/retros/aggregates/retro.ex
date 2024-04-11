@@ -1,4 +1,7 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
+  require Logger
+  alias LittleRetro.Retros.Events.DiscussionAdvanced
+  alias LittleRetro.Retros.Commands.AdvanceDiscussion
   alias LittleRetro.Retros.Commands.RemoveActionItem
   alias LittleRetro.Retros.Events.ActionItemRemoved
   alias LittleRetro.Retros.Events.ActionItemTextEdited
@@ -275,7 +278,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
-  def execute(%__MODULE__{}, %ActionItemCreated{}) do
+  def execute(%__MODULE__{}, %CreateActionItem{}) do
     {:error, :incorrect_phase}
   end
 
@@ -295,7 +298,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
-  def execute(%__MODULE__{}, %ActionItemTextEdited{}) do
+  def execute(%__MODULE__{}, %EditActionItemText{}) do
     {:error, :incorrect_phase}
   end
 
@@ -315,7 +318,28 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     end
   end
 
-  def execute(%__MODULE__{}, %ActionItemRemoved{}) do
+  def execute(%__MODULE__{}, %RemoveActionItem{}) do
+    {:error, :incorrect_phase}
+  end
+
+  def execute(retro = %__MODULE__{phase: :discussion}, %AdvanceDiscussion{user_id: user_id}) do
+    cond do
+      user_id != retro.moderator_id ->
+        {:error, :unauthorized}
+
+      Enum.count(retro.card_ids_to_discuss) < 2 ->
+        {:error, :invalid_input}
+
+      true ->
+        %DiscussionAdvanced{
+          to: Enum.at(retro.card_ids_to_discuss, 1),
+          retro_id: retro.retro_id,
+          user_id: user_id
+        }
+    end
+  end
+
+  def execute(%__MODULE__{}, %AdvanceDiscussion{}) do
     {:error, :incorrect_phase}
   end
 
@@ -476,6 +500,24 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     update_in(retro, [Access.key!(:action_items)], fn action_items ->
       Map.delete(action_items, id)
     end)
+  end
+
+  def apply(retro = %__MODULE__{}, %DiscussionAdvanced{to: to}) do
+    to_index = Enum.find_index(retro.card_ids_to_discuss, &(&1 == to))
+
+    case to_index do
+      nil ->
+        Logger.error("Cannot find card id #{to} in cards to discuss")
+        retro
+
+      _ ->
+        retro
+        |> update_in([Access.key!(:card_ids_to_discuss)], &Enum.drop(&1, to_index))
+        |> update_in([Access.key!(:card_ids_discussed)], fn card_ids_discussed ->
+          newly_discussed = Enum.take(retro.card_ids_to_discuss, to_index)
+          card_ids_discussed ++ Enum.reverse(newly_discussed)
+        end)
+    end
   end
 
   defp reject_first(enumerable, pred) do

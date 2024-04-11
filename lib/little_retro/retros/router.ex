@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.Router do
+  alias LittleRetro.Retros.Commands.AdvanceDiscussion
   alias LittleRetro.Retros.Commands.RemoveActionItem
   alias LittleRetro.Retros.Commands.EditActionItemText
   alias LittleRetro.Retros.Commands.CreateActionItem
@@ -33,7 +34,8 @@ defmodule LittleRetro.Retros.Router do
       RemoveVoteFromCard,
       CreateActionItem,
       EditActionItemText,
-      RemoveActionItem
+      RemoveActionItem,
+      AdvanceDiscussion
     ],
     to: Retro
   )

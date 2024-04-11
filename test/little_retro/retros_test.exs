@@ -529,12 +529,17 @@ defmodule LittleRetro.RetrosTest do
     end
 
     test "moderator can edit action item text", %{retro_id: retro_id, user: user} do
+      text = "Teach pet monkey to use ChatGPT"
+
       assert :ok ==
                Retros.edit_action_item_text(retro_id, %{
                  id: 0,
                  author_id: user.id,
-                 text: "Teach pet monkey to use ChatGPT"
+                 text: text
                })
+
+      retro = Retros.get(retro_id)
+      assert text == retro.action_items[0].text
     end
 
     test "non moderator cannot edit action item text", %{retro_id: retro_id} do
@@ -576,6 +581,9 @@ defmodule LittleRetro.RetrosTest do
                  id: 0,
                  author_id: user.id
                })
+
+      retro = Retros.get(retro_id)
+      refute Map.has_key?(retro.action_items, 0)
     end
 
     test "non moderator cannot remove action item", %{retro_id: retro_id} do
@@ -599,6 +607,31 @@ defmodule LittleRetro.RetrosTest do
     test "cannot remove non existent action item", %{retro_id: retro_id, user: user} do
       assert {:error, _} =
                Retros.remove_action_item(retro_id, %{id: -1, author_id: user.id})
+    end
+  end
+
+  describe "advance_discussion/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "can advance discussion", %{retro_id: retro_id, user: user} do
+      assert :ok == Retros.advance_discussion(retro_id, %{user_id: user.id})
+      retro = Retros.get(retro_id)
+      assert [0] == retro.card_ids_discussed
+      assert [1] == retro.card_ids_to_discuss
+    end
+
+    test "cannot advance discussion with no more cards to discuss", %{
+      retro_id: retro_id,
+      user: user
+    } do
+      :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
+      assert {:error, _} = Retros.advance_discussion(retro_id, %{user_id: user.id})
     end
   end
 end

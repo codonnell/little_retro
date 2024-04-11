@@ -36,6 +36,7 @@
   - [ ] Write discussion UI
     - [x] Fix vertical alignment of cards being discussed
     - [x] Display read-only action items for non-moderators
+    - [ ] Write liveview tests
 - [x] Action items
   - [x] Write action item domain functions
   - [x] Write action item UI
