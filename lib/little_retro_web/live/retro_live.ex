@@ -72,7 +72,10 @@ defmodule LittleRetroWeb.RetroLive do
         </div>
       <% else %>
         <div class="grow flex flex-row h-full">
-          <span class={"p-1 self-center cursor-pointer border rounded-md border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900 #{if Enum.empty?(@retro.card_ids_discussed) do "invisible" end}"}>
+          <span
+            class={"p-1 self-center cursor-pointer border rounded-md border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900 #{if Enum.empty?(@retro.card_ids_discussed) do "invisible" end}"}
+            phx-click="move_discussion_back"
+          >
             <.icon name="hero-arrow-left" class="h-12 w-12" />
           </span>
           <div class="grow flex flex-col mt-16 relative">
@@ -484,6 +487,23 @@ defmodule LittleRetroWeb.RetroLive do
 
     if user.id == retro.moderator_id do
       case Retros.advance_discussion(retro.retro_id, %{user_id: user.id}) do
+        {:error, err} -> Logger.error(err)
+        _ -> nil
+      end
+
+      retro = Retros.get(retro.retro_id)
+      {:noreply, assign(socket, retro: retro)}
+    else
+      {:noreply, redirect_unauthorized(socket)}
+    end
+  end
+
+  def handle_event("move_discussion_back", _, socket) do
+    user = socket.assigns.current_user
+    retro = socket.assigns.retro
+
+    if user.id == retro.moderator_id do
+      case Retros.move_discussion_back(retro.retro_id, %{user_id: user.id}) do
         {:error, err} -> Logger.error(err)
         _ -> nil
       end
