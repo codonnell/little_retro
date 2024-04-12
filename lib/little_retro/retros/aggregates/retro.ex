@@ -1,5 +1,7 @@
 defmodule LittleRetro.Retros.Aggregates.Retro do
   require Logger
+  alias LittleRetro.Retros.Commands.MoveDiscussionBack
+  alias LittleRetro.Retros.Events.DiscussionMovedBack
   alias LittleRetro.Retros.Events.DiscussionAdvanced
   alias LittleRetro.Retros.Commands.AdvanceDiscussion
   alias LittleRetro.Retros.Commands.RemoveActionItem
@@ -343,6 +345,27 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
     {:error, :incorrect_phase}
   end
 
+  def execute(retro = %__MODULE__{phase: :discussion}, %MoveDiscussionBack{user_id: user_id}) do
+    cond do
+      user_id != retro.moderator_id ->
+        {:error, :unauthorized}
+
+      Enum.empty?(retro.card_ids_discussed) ->
+        {:error, :invalid_input}
+
+      true ->
+        %DiscussionMovedBack{
+          to: hd(retro.card_ids_discussed),
+          retro_id: retro.retro_id,
+          user_id: user_id
+        }
+    end
+  end
+
+  def execute(%__MODULE__{}, %MoveDiscussionBack{}) do
+    {:error, :incorrect_phase}
+  end
+
   def execute(%__MODULE__{}, _command) do
     {:error, :unrecognized_command}
   end
@@ -515,7 +538,25 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
         |> update_in([Access.key!(:card_ids_to_discuss)], &Enum.drop(&1, to_index))
         |> update_in([Access.key!(:card_ids_discussed)], fn card_ids_discussed ->
           newly_discussed = Enum.take(retro.card_ids_to_discuss, to_index)
-          card_ids_discussed ++ Enum.reverse(newly_discussed)
+          Enum.reverse(newly_discussed) ++ card_ids_discussed
+        end)
+    end
+  end
+
+  def apply(retro = %__MODULE__{}, %DiscussionMovedBack{to: to}) do
+    to_index = Enum.find_index(retro.card_ids_discussed, &(&1 == to))
+
+    case to_index do
+      nil ->
+        Logger.error("Cannot find card id #{to} in cards discussed")
+        retro
+
+      _ ->
+        retro
+        |> update_in([Access.key!(:card_ids_discussed)], &Enum.drop(&1, to_index + 1))
+        |> update_in([Access.key!(:card_ids_to_discuss)], fn card_ids_to_discuss ->
+          new_to_discuss = Enum.take(retro.card_ids_discussed, to_index + 1)
+          Enum.reverse(new_to_discuss) ++ card_ids_to_discuss
         end)
     end
   end

@@ -615,15 +615,17 @@ defmodule LittleRetro.RetrosTest do
       %{retro_id: retro_id, user: user} = retro_fixture()
       Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
       Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
       Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
       %{retro_id: retro_id, user: user}
     end
 
     test "can advance discussion", %{retro_id: retro_id, user: user} do
       assert :ok == Retros.advance_discussion(retro_id, %{user_id: user.id})
+      assert :ok == Retros.advance_discussion(retro_id, %{user_id: user.id})
       retro = Retros.get(retro_id)
-      assert [0] == retro.card_ids_discussed
-      assert [1] == retro.card_ids_to_discuss
+      assert [1, 0] == retro.card_ids_discussed
+      assert [2] == retro.card_ids_to_discuss
     end
 
     test "cannot advance discussion with no more cards to discuss", %{
@@ -631,7 +633,33 @@ defmodule LittleRetro.RetrosTest do
       user: user
     } do
       :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
+      :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
       assert {:error, _} = Retros.advance_discussion(retro_id, %{user_id: user.id})
+    end
+  end
+
+  describe "move_discussion_back/2" do
+    setup do
+      %{retro_id: retro_id, user: user} = retro_fixture()
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      %{retro_id: retro_id, user: user}
+    end
+
+    test "can move discussion back", %{retro_id: retro_id, user: user} do
+      :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
+      assert :ok == Retros.move_discussion_back(retro_id, %{user_id: user.id})
+      retro = Retros.get(retro_id)
+      assert [] == retro.card_ids_discussed
+      assert [0, 1] == retro.card_ids_to_discuss
+    end
+
+    test "cannot move discussion back with no cards discussed", %{
+      retro_id: retro_id,
+      user: user
+    } do
+      assert {:error, _} = Retros.move_discussion_back(retro_id, %{user_id: user.id})
     end
   end
 end

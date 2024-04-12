@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros do
+  alias LittleRetro.Retros.Commands.MoveDiscussionBack
   alias LittleRetro.Retros.Commands.AdvanceDiscussion
   alias LittleRetro.Retros.Commands.RemoveActionItem
   alias LittleRetro.Retros.Commands.EditActionItemText
@@ -250,6 +251,19 @@ defmodule LittleRetro.Retros do
 
   def advance_discussion(retro_id, %{user_id: user_id}) do
     case CommandedApplication.dispatch(%AdvanceDiscussion{
+           retro_id: retro_id,
+           user_id: user_id
+         }) do
+      {:error, err} -> {:error, err}
+      _ -> :ok
+    end
+  end
+
+  @spec move_discussion_back(retro_id :: String.t(), %{user_id: integer()}) ::
+          :ok | {:error, atom()}
+
+  def move_discussion_back(retro_id, %{user_id: user_id}) do
+    case CommandedApplication.dispatch(%MoveDiscussionBack{
            retro_id: retro_id,
            user_id: user_id
          }) do

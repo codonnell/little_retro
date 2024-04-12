@@ -1,4 +1,5 @@
 defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
+  alias LittleRetro.Retros.Events.DiscussionMovedBack
   alias LittleRetro.Retros.Events.DiscussionAdvanced
   alias LittleRetro.Retros.Events.ActionItemRemoved
   alias LittleRetro.Retros.Events.ActionItemTextEdited
@@ -79,6 +80,10 @@ defmodule LittleRetro.Retros.EventHandlers.RetroPubSub do
   end
 
   def handle(%DiscussionAdvanced{retro_id: retro_id}, _metadata) do
+    broadcast_retro(retro_id)
+  end
+
+  def handle(%DiscussionMovedBack{retro_id: retro_id}, _metadata) do
     broadcast_retro(retro_id)
   end
 
