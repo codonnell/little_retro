@@ -652,7 +652,9 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
   end
 
   defp change_phase_to_discussion(retro = %__MODULE__{}) do
-    card_ids = Map.keys(retro.cards)
+    card_ids =
+      Map.keys(retro.cards)
+      |> Enum.reject(fn card_id -> middle_card_in_group?(retro, card_id) end)
 
     card_ids_by_vote_count =
       retro.votes_by_card_id

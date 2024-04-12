@@ -204,12 +204,14 @@ defmodule LittleRetro.RetrosTest do
       :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
       :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
       :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{user_id: user.id, phase: :group_cards})
+      :ok = Retros.group_cards(retro_id, %{user_id: user.id, card_id: 3, onto: 1})
       :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
       # Discussion order:
       # card 1: 2 votes
       # card 0: 1 vote
       # card 2: 1 votes (and higher id)
-      # card 3: 0 votes
+      # card 3: grouped onto card 1--should not be present
       # card 4: 0 votes
       :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
       :ok = Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 1})
@@ -219,7 +221,7 @@ defmodule LittleRetro.RetrosTest do
       retro = Retros.get(retro_id)
       assert :discussion == retro.phase
       assert [] == retro.card_ids_discussed
-      assert [1, 0, 2, 3, 4] == retro.card_ids_to_discuss
+      assert [1, 0, 2, 4] == retro.card_ids_to_discuss
     end
   end
 
