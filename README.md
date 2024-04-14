@@ -2,11 +2,19 @@
 
 A simple, fast, reactive, and easy to use retro platform. Still a work in progress!
 
+To get the validated elixir and erlang versions using `asdf`:
+  * Install `asdf` with `brew install asdf` or following the [instructions](https://asdf-vm.com/guide/getting-started.html)
+  * Install `asdf-erlang` with `asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git`
+  * Install `asdf-elixir` with `asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git`
+  * Install the validated erlang and elixir versions with `asdf install` (it may take a few minutes to compile erlang)
+
 To start your Phoenix server:
 
+  * Run `mix deps.get` to get dependencies
   * Run `mix do event_store.create, event_store.init` to initialize the event store
-  * Run `mix setup` to install and setup dependencies
+    * If you get an error about a `postgres` user not existing, you can run `psql -c "create user postgres superuser with password 'postgres'"` and try again
   * Run `cd assets && yarn install && cd ..` to install JS dependencies
+  * Run `mix setup` to install and setup dependencies
   * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
