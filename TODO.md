@@ -42,14 +42,14 @@
   - [x] Write action item domain functions
   - [x] Write action item UI
   - [x] Write action item liveview tests
-- [ ] Refactor retro UI so each phase (below the header) has its own component
 - [ ] See currently active retros on homepage
-- [ ] Delete unused header entries
-- [ ] Deploy
+- [x] Delete unused header entries
+- [x] Deploy
 
 
 ## Later
 
+- [ ] Refactor retro UI so each phase (below the header) has its own component
 - [x] Write README
 - [ ] List completed retros (show action items?)
 - [ ] Navigate to completed retros (ready only mode?)
