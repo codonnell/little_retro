@@ -9,8 +9,40 @@ defmodule LittleRetroWeb.RetroLive do
   use LittleRetroWeb, :live_view
 
   def render(assigns) do
+    retro = assigns.retro
+
     assigns =
-      assign(assigns, :is_moderator, assigns.current_user.id == assigns.retro.moderator_id)
+      if retro.phase == :discussion and not Enum.empty?(retro.card_ids_to_discuss) do
+        card_id = hd(retro.card_ids_to_discuss)
+        IO.inspect(card_id)
+        IO.inspect(retro.card_ids_to_discuss)
+        IO.inspect(retro.votes_by_card_id)
+        IO.inspect(retro.votes_by_card_id |> Map.get(card_id, []) |> Enum.count())
+
+        card_ids =
+          if Map.has_key?(retro.groups, card_id),
+            do: retro.groups[card_id][:cards],
+            else: [card_id]
+
+        assign(assigns,
+          cards_to_discuss: Enum.map(card_ids, fn id -> Map.get(retro.cards, id) end),
+          num_votes: retro.votes_by_card_id |> Map.get(card_id, []) |> Enum.count()
+        )
+      else
+        assigns
+      end
+
+    action_items =
+      Map.keys(retro.action_items)
+      |> Enum.sort()
+      |> Enum.reverse()
+      |> Enum.map(&Map.get(retro.action_items, &1))
+
+    assigns =
+      assign(assigns,
+        is_moderator: assigns.current_user.id == retro.moderator_id,
+        action_items: action_items
+      )
 
     ~H"""
     <div class="grow flex flex-col">
@@ -79,23 +111,10 @@ defmodule LittleRetroWeb.RetroLive do
             <.icon name="hero-arrow-left" class="h-12 w-12" />
           </span>
           <div class="grow flex flex-col mt-16 relative">
-            <%= unless Enum.empty?(@retro.cards) do %>
-              <% card_id = hd(@retro.card_ids_to_discuss) %>
-              <% card_ids =
-                if Map.has_key?(@retro.groups, card_id),
-                  do: @retro.groups[card_id][:cards],
-                  else: [card_id] %>
-              <% cards = Enum.map(card_ids, &@retro.cards[&1]) %>
-              <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
-                <li :for={card <- cards} class="divide-y">
-                  <div class="relative overflow-hidden rounded bg-white shadow-lg w-52 min-h-9 ">
-                    <div class="px-3 py-1.5 h-full min-h-9 border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
-                      <%= card.text %>
-                    </div>
-                  </div>
-                </li>
-              </ul>
-            <% end %>
+            <RetroComponents.cards_to_discuss_column
+              num_votes={@num_votes}
+              cards_to_discuss={@cards_to_discuss}
+            />
           </div>
           <span
             class={"p-1 self-center cursor-pointer border rounded-md border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900 #{if Enum.count(@retro.card_ids_to_discuss) < 2 do "invisible" end}"}
@@ -104,39 +123,10 @@ defmodule LittleRetroWeb.RetroLive do
             <.icon name="hero-arrow-right" class="h-12 w-12" />
           </span>
           <div class="mt-4 ml-8 pl-8 border-l-2">
-            <div class="w-52 text-center mt-4 flex flex-row items-center gap-x-2">
-              <span class="text-2xl font-bold">Action Items</span>
-              <%= if @is_moderator do %>
-                <span
-                  class="p-1 border rounded-md hover:bg-gray-50"
-                  phx-click="create_action_item"
-                  data-test="create-action-item"
-                >
-                  <.icon
-                    name="hero-plus"
-                    class="h-6 w-6 cursor-pointer text-slate-500 hover:text-slate-700"
-                  />
-                </span>
-              <% end %>
-            </div>
-            <ul role="list" class="divide-y divide-gray-100">
-              <li
-                :for={
-                  action_item <-
-                    Map.keys(@retro.action_items)
-                    |> Enum.sort()
-                    |> Enum.reverse()
-                    |> Enum.map(&Map.get(@retro.action_items, &1))
-                }
-                class="flex gap-x-4 py-5"
-              >
-                <%= if @is_moderator do %>
-                  <RetroComponents.editable_action_item id={action_item.id} text={action_item.text} />
-                <% else %>
-                  <RetroComponents.read_only_action_item id={action_item.id} text={action_item.text} />
-                <% end %>
-              </li>
-            </ul>
+            <RetroComponents.action_item_column
+              action_items={@action_items}
+              is_moderator={@is_moderator}
+            />
           </div>
         </div>
       <% end %>

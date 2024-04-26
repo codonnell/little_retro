@@ -309,4 +309,57 @@ defmodule LittleRetroWeb.RetroComponents do
     </.modal>
     """
   end
+
+  attr :num_votes, :integer, required: true
+  attr :cards_to_discuss, :list, required: true
+
+  def cards_to_discuss_column(assigns) do
+    ~H"""
+    <%= unless Enum.empty?(@cards_to_discuss) do %>
+      <div class="text-center h-8">
+        <span :for={i <- 1..@num_votes} :if={@num_votes > 0} data-test={"discussion-circle-#{i}"}>
+          <.icon name="hero-check-circle" class="h-8 w-8 text-blue-600" />
+        </span>
+      </div>
+      <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
+        <li :for={card <- @cards_to_discuss} class="divide-y">
+          <div class="relative overflow-hidden rounded bg-white shadow-lg w-52 min-h-9 ">
+            <div class="px-3 py-1.5 h-full min-h-9 border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+              <%= card.text %>
+            </div>
+          </div>
+        </li>
+      </ul>
+    <% end %>
+    """
+  end
+
+  attr :action_items, :list, required: true
+  attr :is_moderator, :boolean, required: true
+
+  def action_item_column(assigns) do
+    ~H"""
+    <div class="w-52 text-center mt-4 flex flex-row items-center gap-x-2">
+      <span class="text-2xl font-bold">Action Items</span>
+      <%= if @is_moderator do %>
+        <span
+          class="p-1 border rounded-md hover:bg-gray-50"
+          phx-click="create_action_item"
+          data-test="create-action-item"
+        >
+          <.icon name="hero-plus" class="h-6 w-6 cursor-pointer text-slate-500 hover:text-slate-700" />
+        </span>
+      <% end %>
+    </div>
+    <ul role="list" class="divide-y divide-gray-100">
+      <li :for={action_item <- @action_items} class="flex gap-x-4 py-5">
+        <%= if @is_moderator do %>
+          <.editable_action_item id={action_item.id} text={action_item.text} />
+        <% else %>
+          <.read_only_action_item id={action_item.id} text={action_item.text} />
+        <% end %>
+      </li>
+    </ul>
+    """
+  end
 end

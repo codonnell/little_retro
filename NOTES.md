@@ -37,3 +37,4 @@ We use Phoenix PubSub to distribute live updates to all users actively on the re
 
 * Unsure how much value the `LittleRetro.Retros` context module provides.
 * Business logic almost all lives in the aggregate module; this doesn't feel sustainable over the long haul, but it's unclear how to effectively break it up given the pattern matching requirements. Perhaps we could nest related [command handler](https://hexdocs.pm/commanded/Commanded.Commands.Handler.html) and [event handler](https://hexdocs.pm/commanded/Commanded.Event.Handler.html) modules in a parent module? (Eg. commands and events per phase are grouped together.) Really want to keep phase implementations colocated in the same file. We could potentially also put the command and event module definitions there, too for improved cohesion.
+* The card tailwind classes are copy pasted all over the place. If they need to be changed, it will be painful.

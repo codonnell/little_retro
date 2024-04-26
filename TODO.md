@@ -32,14 +32,17 @@
   - [x] Write voting domain functions
   - [x] Write voting UI
 - [ ] Discussion
-  - [ ] Write discussion domain functions
+  - [x] Write discussion domain functions
   - [ ] Write discussion UI
     - [x] Fix vertical alignment of cards being discussed
     - [x] Display read-only action items for non-moderators
+    - [x] Display number of votes on a card
     - [ ] Write liveview tests
 - [x] Action items
   - [x] Write action item domain functions
   - [x] Write action item UI
+  - [ ] Write action item liveview tests
+- [ ] Refactor retro UI so each phase (below the header) has its own component
 - [ ] See currently active retros on homepage
 - [ ] Delete unused header entries
 - [ ] Deploy
