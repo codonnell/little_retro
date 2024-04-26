@@ -25,7 +25,10 @@ defmodule LittleRetroWeb.RetroLive do
           num_votes: retro.votes_by_card_id |> Map.get(card_id, []) |> Enum.count()
         )
       else
-        assigns
+        assign(assigns,
+          cards_to_discuss: [],
+          num_votes: 0
+        )
       end
 
     action_items =

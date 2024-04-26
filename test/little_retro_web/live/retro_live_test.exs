@@ -337,6 +337,80 @@ defmodule LittleRetroWeb.RetroLiveTest do
     end
   end
 
+  describe "create action item" do
+    test "moderator can create an action item", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(user)
+        |> live(~p"/retros/#{retro_id}")
+
+      view
+      |> data_test("create-action-item")
+      |> render_click()
+
+      assert has_element?(view, data_test_sel("edit-action-item-form-0"))
+    end
+
+    test "non-moderator cannot create an action item", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      other_user = user_fixture()
+      :ok = Retros.add_user(retro_id, other_user.email)
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(other_user)
+        |> live(~p"/retros/#{retro_id}")
+
+      refute has_element?(view, data_test_sel("create-action-item"))
+    end
+  end
+
+  describe "edit action item" do
+    test "other liveviews see card updates", %{conn: pub_conn, user: pub_user} do
+      sub_conn = Phoenix.ConnTest.build_conn()
+      sub_user = user_fixture()
+
+      {:ok, retro_id} = Retros.create_retro(pub_user.id)
+      Retros.add_user(retro_id, sub_user.email)
+      Retros.change_phase(retro_id, %{phase: :discussion, user_id: pub_user.id})
+      Retros.create_action_item(retro_id, %{author_id: pub_user.id})
+
+      {:ok, pub_view, _html} =
+        pub_conn |> log_in_user(pub_user) |> live(~p"/retros/#{retro_id}")
+
+      {:ok, sub_view, _html} =
+        sub_conn |> log_in_user(sub_user) |> live(~p"/retros/#{retro_id}")
+
+      PubSub.subscribe(LittleRetro.PubSub, "retro:#{retro_id}")
+
+      pub_view
+      |> data_test("edit-action-item-form-0")
+      |> render_change(%{"action-item-id" => 0, "text" => "Hello World"})
+
+      wait_for(sub_view, :retro_updated)
+
+      assert sub_view |> data_test("read-only-action-item-0") |> render =~ "Hello World"
+    end
+  end
+
+  describe "delete action item" do
+    test "action item is removed from dom when deleted", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      Retros.create_action_item(retro_id, %{author_id: user.id})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("delete-action-item-button-0") |> render_click()
+
+      refute has_element?(view, "#edit-action-item-form-0")
+    end
+  end
+
   defp wait_for(view, msg) do
     # Ensure pubsub message has been broadcast
     assert_receive {^msg, _}
