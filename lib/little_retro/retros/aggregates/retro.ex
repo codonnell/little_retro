@@ -330,7 +330,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
         {:error, :unauthorized}
 
       Enum.count(retro.card_ids_to_discuss) < 2 ->
-        {:error, :invalid_input}
+        nil
 
       true ->
         %DiscussionAdvanced{
@@ -351,7 +351,7 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
         {:error, :unauthorized}
 
       Enum.empty?(retro.card_ids_discussed) ->
-        {:error, :invalid_input}
+        nil
 
       true ->
         %DiscussionMovedBack{

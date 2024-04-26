@@ -14,10 +14,6 @@ defmodule LittleRetroWeb.RetroLive do
     assigns =
       if retro.phase == :discussion and not Enum.empty?(retro.card_ids_to_discuss) do
         card_id = hd(retro.card_ids_to_discuss)
-        IO.inspect(card_id)
-        IO.inspect(retro.card_ids_to_discuss)
-        IO.inspect(retro.votes_by_card_id)
-        IO.inspect(retro.votes_by_card_id |> Map.get(card_id, []) |> Enum.count())
 
         card_ids =
           if Map.has_key?(retro.groups, card_id),
@@ -106,6 +102,7 @@ defmodule LittleRetroWeb.RetroLive do
         <div class="grow flex flex-row h-full">
           <span
             class={"p-1 self-center cursor-pointer border rounded-md border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900 #{if Enum.empty?(@retro.card_ids_discussed) do "invisible" end}"}
+            data-test="move-discussion-back-button"
             phx-click="move_discussion_back"
           >
             <.icon name="hero-arrow-left" class="h-12 w-12" />
@@ -118,6 +115,7 @@ defmodule LittleRetroWeb.RetroLive do
           </div>
           <span
             class={"p-1 self-center cursor-pointer border rounded-md border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900 #{if Enum.count(@retro.card_ids_to_discuss) < 2 do "invisible" end}"}
+            data-test="advance-discussion-button"
             phx-click="advance_discussion"
           >
             <.icon name="hero-arrow-right" class="h-12 w-12" />
@@ -419,7 +417,7 @@ defmodule LittleRetroWeb.RetroLive do
       retro = Retros.get(retro.retro_id)
       {:noreply, assign(socket, retro: retro)}
     else
-      {:noreply, redirect_unauthorized(socket)}
+      {:noreply, flash_unauthorized(socket)}
     end
   end
 
@@ -445,7 +443,7 @@ defmodule LittleRetroWeb.RetroLive do
       retro = Retros.get(retro.retro_id)
       {:noreply, assign(socket, retro: retro)}
     else
-      {:noreply, redirect_unauthorized(socket)}
+      {:noreply, flash_unauthorized(socket)}
     end
   end
 
@@ -467,7 +465,7 @@ defmodule LittleRetroWeb.RetroLive do
       retro = Retros.get(retro.retro_id)
       {:noreply, assign(socket, retro: retro)}
     else
-      {:noreply, redirect_unauthorized(socket)}
+      {:noreply, flash_unauthorized(socket)}
     end
   end
 
@@ -477,14 +475,14 @@ defmodule LittleRetroWeb.RetroLive do
 
     if user.id == retro.moderator_id do
       case Retros.advance_discussion(retro.retro_id, %{user_id: user.id}) do
-        {:error, err} -> Logger.error(err)
+        {:error, err} -> Logger.error(inspect(err))
         _ -> nil
       end
 
       retro = Retros.get(retro.retro_id)
       {:noreply, assign(socket, retro: retro)}
     else
-      {:noreply, redirect_unauthorized(socket)}
+      {:noreply, flash_unauthorized(socket)}
     end
   end
 
@@ -501,8 +499,12 @@ defmodule LittleRetroWeb.RetroLive do
       retro = Retros.get(retro.retro_id)
       {:noreply, assign(socket, retro: retro)}
     else
-      {:noreply, redirect_unauthorized(socket)}
+      {:noreply, flash_unauthorized(socket)}
     end
+  end
+
+  defp flash_unauthorized(socket) do
+    put_flash(socket, :error, "Only the moderator can change phase.")
   end
 
   defp redirect_unauthorized(socket) do

@@ -636,7 +636,10 @@ defmodule LittleRetro.RetrosTest do
     } do
       :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
       :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
-      assert {:error, _} = Retros.advance_discussion(retro_id, %{user_id: user.id})
+      assert :ok == Retros.advance_discussion(retro_id, %{user_id: user.id})
+      retro = Retros.get(retro_id)
+      assert [1, 0] == retro.card_ids_discussed
+      assert [2] == retro.card_ids_to_discuss
     end
   end
 
@@ -661,7 +664,10 @@ defmodule LittleRetro.RetrosTest do
       retro_id: retro_id,
       user: user
     } do
-      assert {:error, _} = Retros.move_discussion_back(retro_id, %{user_id: user.id})
+      assert :ok = Retros.move_discussion_back(retro_id, %{user_id: user.id})
+      retro = Retros.get(retro_id)
+      assert [] == retro.card_ids_discussed
+      assert [0, 1] == retro.card_ids_to_discuss
     end
   end
 end

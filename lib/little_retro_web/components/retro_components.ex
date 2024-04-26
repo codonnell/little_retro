@@ -324,7 +324,10 @@ defmodule LittleRetroWeb.RetroComponents do
       <ul role="list" class="flex flex-wrap justify-center gap-6 m-4">
         <li :for={card <- @cards_to_discuss} class="divide-y">
           <div class="relative overflow-hidden rounded bg-white shadow-lg w-52 min-h-9 ">
-            <div class="px-3 py-1.5 h-full min-h-9 border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+            <div
+              class="px-3 py-1.5 h-full min-h-9 border-0 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+              data-test={"discussion-card-#{card.id}"}
+            >
               <%= card.text %>
             </div>
           </div>

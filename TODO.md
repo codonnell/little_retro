@@ -33,11 +33,11 @@
   - [x] Write voting UI
 - [ ] Discussion
   - [x] Write discussion domain functions
-  - [ ] Write discussion UI
+  - [x] Write discussion UI
     - [x] Fix vertical alignment of cards being discussed
     - [x] Display read-only action items for non-moderators
     - [x] Display number of votes on a card
-    - [ ] Write liveview tests
+    - [x] Write liveview tests
 - [x] Action items
   - [x] Write action item domain functions
   - [x] Write action item UI

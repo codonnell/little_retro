@@ -224,6 +224,119 @@ defmodule LittleRetroWeb.RetroLiveTest do
     end
   end
 
+  describe "vote counts" do
+    test "vote counts are displayed", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+
+      Enum.each(1..9, fn _ ->
+        Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      end)
+
+      :ok = Retros.change_phase(retro_id, %{phase: :vote, user_id: user.id})
+      Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 0})
+      Retros.vote_for_card(retro_id, %{user_id: user.id, card_id: 1})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      assert has_element?(view, data_test_sel("discussion-circle-1"))
+      assert has_element?(view, data_test_sel("discussion-circle-2"))
+      refute has_element?(view, data_test_sel("discussion-circle-3"))
+
+      view |> data_test("advance-discussion-button") |> render_click()
+
+      assert has_element?(view, data_test_sel("discussion-circle-1"))
+      refute has_element?(view, data_test_sel("discussion-circle-2"))
+
+      view |> data_test("advance-discussion-button") |> render_click()
+
+      refute has_element?(view, data_test_sel("discussion-card-1"))
+    end
+  end
+
+  describe "advance discussion" do
+    test "moderator can advance discussion", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("advance-discussion-button") |> render_click()
+
+      assert has_element?(view, data_test_sel("discussion-card-1"))
+    end
+
+    test "non-moderator cannot advance discussion", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.add_user(retro_id, other_user.email)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(other_user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("advance-discussion-button") |> render_click()
+
+      refute has_element?(view, data_test_sel("discussion-card-1"))
+    end
+
+    test "advance discussion is a no-op with no cards left", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("advance-discussion-button") |> render_click()
+
+      assert has_element?(view, data_test_sel("discussion-card-1"))
+    end
+  end
+
+  describe "move discussion back" do
+    test "moderator can move discussion back", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("move-discussion-back-button") |> render_click()
+
+      assert has_element?(view, data_test_sel("discussion-card-0"))
+    end
+
+    test "non-moderator cannot move discussion back", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.add_user(retro_id, other_user.email)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      :ok = Retros.advance_discussion(retro_id, %{user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(other_user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("move-discussion-back-button") |> render_click()
+
+      assert has_element?(view, data_test_sel("discussion-card-1"))
+    end
+
+    test "move discussion back is a no-op with no cards left", %{conn: conn, user: user} do
+      {:ok, retro_id} = Retros.create_retro(user.id)
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.create_card(retro_id, %{author_id: user.id, column_id: 0})
+      :ok = Retros.change_phase(retro_id, %{phase: :discussion, user_id: user.id})
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/retros/#{retro_id}")
+
+      view |> data_test("move-discussion-back-button") |> render_click()
+
+      assert has_element?(view, data_test_sel("discussion-card-0"))
+    end
+  end
+
   defp wait_for(view, msg) do
     # Ensure pubsub message has been broadcast
     assert_receive {^msg, _}
