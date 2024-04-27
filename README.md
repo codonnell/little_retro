@@ -4,6 +4,7 @@ A simple, fast, reactive, and easy to use retro platform. Still a work in progre
 
 To get the validated elixir and erlang versions using `asdf`:
   * Install `asdf` with `brew install asdf` or following the [instructions](https://asdf-vm.com/guide/getting-started.html)
+    * If you install with homebrew, make sure to source the shim in your shell as explained [here](https://asdf-vm.com/guide/getting-started.html#_3-install-asdf).
   * Install `asdf-erlang` with `asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git`
   * Install `asdf-elixir` with `asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git`
   * Install the validated erlang and elixir versions with `asdf install` (it may take a few minutes to compile erlang)
