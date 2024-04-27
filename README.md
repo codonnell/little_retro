@@ -9,12 +9,13 @@ To get the validated elixir and erlang versions using `asdf`:
   * Install `asdf-elixir` with `asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git`
   * Install the validated erlang and elixir versions with `asdf install` (it may take a few minutes to compile erlang)
 
+Follow your operating system's instructions to install Postgres locally. Any supported version of Postgres should suffice.
+
 To start your Phoenix server:
 
   * Run `mix deps.get` to get dependencies
   * Run `mix do event_store.create, event_store.init` to initialize the event store
     * If you get an error about a `postgres` user not existing, you can run `psql -c "create user postgres superuser with password 'postgres'"` and try again
-  * Run `cd assets && yarn install && cd ..` to install JS dependencies
   * Run `mix setup` to install and setup dependencies
   * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
 
