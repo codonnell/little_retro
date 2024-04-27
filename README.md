@@ -15,7 +15,7 @@ To start your Phoenix server:
 
   * Run `mix deps.get` to get dependencies
   * Run `mix do event_store.create, event_store.init` to initialize the event store
-    * If you get an error about a `postgres` user not existing, you can run `psql -c "create user postgres superuser with password 'postgres'"` and try again
+    * If you get an error about a `postgres` user not existing, you can run `psql -c "create user postgres with superuser password 'postgres'"` and try again
   * Run `mix setup` to install and setup dependencies
   * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
 
