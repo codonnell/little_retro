@@ -43,8 +43,13 @@
   - [x] Write action item UI
   - [x] Write action item liveview tests
 - [ ] See currently active retros on homepage
+  - [ ] Retro users projection
+  - [ ] Retro basic info projection
+  - [ ] Get retros for user domain function
+  - [ ] Retros for user UI
 - [x] Delete unused header entries
 - [x] Deploy
+- [ ] Display number of remaining votes in UI during vote phase
 
 
 ## Later
