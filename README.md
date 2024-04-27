@@ -36,6 +36,18 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
 1. Implement the UI using the [liveview](lib/little_retro_web/live/retro_live.ex) and [component](lib/little_retro_web/components/retro_components.ex) modules.
 1. If feasible, add liveview tests for the action [here](test/little_retro_web/live/retro_live_test.exs).
 
+## How to run tests
+
+To run the full test suite on watch mode:
+```
+mix test.watch
+```
+
+To only rerun stale tests:
+```
+mix test.watch --stale
+```
+
 ## Learn more
 
   * Official website: https://www.phoenixframework.org/
