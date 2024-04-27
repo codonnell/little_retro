@@ -1,5 +1,5 @@
 defmodule LittleRetroWeb.ErrorHTMLTest do
-  use LittleRetroWeb.ConnCase, async: true
+  use LittleRetroWeb.ConnCase
 
   # Bring render_to_string/4 for testing custom views
   import Phoenix.Template
@@ -9,6 +9,7 @@ defmodule LittleRetroWeb.ErrorHTMLTest do
   end
 
   test "renders 500.html" do
-    assert render_to_string(LittleRetroWeb.ErrorHTML, "500", "html", []) == "Internal Server Error"
+    assert render_to_string(LittleRetroWeb.ErrorHTML, "500", "html", []) ==
+             "Internal Server Error"
   end
 end

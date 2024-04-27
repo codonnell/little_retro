@@ -5,7 +5,7 @@ defmodule LittleRetro.RetrosTest do
   alias LittleRetro.Accounts.User
   alias LittleRetro.Retros
 
-  use LittleRetro.DataCase, async: true
+  use LittleRetro.DataCase
 
   import LittleRetro.AccountsFixtures
   import LittleRetro.RetrosFixtures

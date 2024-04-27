@@ -24,12 +24,12 @@ defmodule LittleRetro.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import LittleRetro.DataCase
+      import Commanded.Assertions.EventAssertions
     end
   end
 
   setup tags do
-    LittleRetro.DataCase.setup_sandbox(tags)
-    :ok
+    setup_sandbox(tags)
   end
 
   @doc """
@@ -37,7 +37,29 @@ defmodule LittleRetro.DataCase do
   """
   def setup_sandbox(tags) do
     pid = Ecto.Adapters.SQL.Sandbox.start_owner!(LittleRetro.Repo, shared: not tags[:async])
+    app = start_supervised!(LittleRetro.CommandedApplication)
+    event_handlers = start_supervised!(LittleRetro.EventHandlerSupervisor)
+    allow_recursive(self(), app)
+    allow_recursive(self(), event_handlers)
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+  end
+
+  @doc """
+  Allows all child process under passed in `app` to parent SQL sandbox pid
+  """
+  def allow_recursive(parent, app) do
+    groups =
+      Supervisor.which_children(app)
+      |> Enum.group_by(fn {_, _, v, _} -> v end)
+
+    Enum.each(Map.get(groups, :worker, []), fn {_, pid, _, _} ->
+      Ecto.Adapters.SQL.Sandbox.allow(LittleRetro.Repo, parent, pid)
+    end)
+
+    Enum.each(Map.get(groups, :supervisor, []), fn {_, pid, _, _} ->
+      Ecto.Adapters.SQL.Sandbox.allow(LittleRetro.Repo, parent, pid)
+      allow_recursive(parent, pid)
+    end)
   end
 
   @doc """

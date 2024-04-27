@@ -1,7 +1,7 @@
 defmodule LittleRetroWeb.RetroLiveTest do
   alias Phoenix.PubSub
   alias LittleRetro.Retros
-  use LittleRetroWeb.ConnCase, async: true
+  use LittleRetroWeb.ConnCase
 
   import Phoenix.LiveViewTest
   import LittleRetro.AccountsFixtures

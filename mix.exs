@@ -34,6 +34,7 @@ defmodule LittleRetro.MixProject do
     [
       {:commanded, "~> 1.4"},
       {:commanded_eventstore_adapter, "~> 1.4"},
+      {:commanded_ecto_projections, "~> 1.4"},
       {:typed_struct, "~> 0.3.0"},
       {:bcrypt_elixir, "~> 3.0"},
       {:phoenix, "~> 1.7.11"},

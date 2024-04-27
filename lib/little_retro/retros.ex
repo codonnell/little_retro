@@ -8,8 +8,6 @@ defmodule LittleRetro.Retros do
   alias LittleRetro.Retros.Commands.VoteForCard
   alias LittleRetro.Retros.Commands.RemoveCardFromGroup
   alias LittleRetro.Retros.Commands.GroupCards
-  alias LittleRetro.Retros.Aggregates.Retro.Card
-  alias LittleRetro.Retros.Aggregates.Retro.Column
   alias LittleRetro.Retros.Commands.ChangePhase
   alias LittleRetro.Retros.Commands.DeleteCardById
   alias LittleRetro.Retros.Commands.EditCardText
@@ -59,7 +57,10 @@ defmodule LittleRetro.Retros do
       %User{} ->
         retro_id = UUID.uuid4()
 
-        CommandedApplication.dispatch(%CreateRetro{retro_id: retro_id, moderator_id: moderator_id})
+        CommandedApplication.dispatch(
+          %CreateRetro{retro_id: retro_id, moderator_id: moderator_id},
+          consistency: Application.get_env(:little_retro, :consistency)
+        )
 
         {:ok, retro_id}
 
@@ -69,40 +70,50 @@ defmodule LittleRetro.Retros do
   end
 
   def add_user(retro_id, email) do
-    case CommandedApplication.dispatch(%AddUserByEmail{retro_id: retro_id, email: email}) do
+    case CommandedApplication.dispatch(%AddUserByEmail{retro_id: retro_id, email: email},
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
   end
 
   def remove_user(retro_id, email) do
-    case CommandedApplication.dispatch(%RemoveUserByEmail{retro_id: retro_id, email: email}) do
+    case CommandedApplication.dispatch(%RemoveUserByEmail{retro_id: retro_id, email: email},
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
   end
 
-  @spec create_card(retro_id :: String.t(), %{author_id: integer(), column_id: Column.id()}) ::
+  @spec create_card(retro_id :: String.t(), %{author_id: integer(), column_id: integer()}) ::
           :ok | {:error, atom()}
 
   def create_card(retro_id, %{author_id: author_id, column_id: column_id}) do
-    case CommandedApplication.dispatch(%CreateCard{
-           retro_id: retro_id,
-           author_id: author_id,
-           column_id: column_id
-         }) do
+    case CommandedApplication.dispatch(
+           %CreateCard{
+             retro_id: retro_id,
+             author_id: author_id,
+             column_id: column_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
   end
 
   def edit_card_text(retro_id, %{id: id, author_id: author_id, text: text}) do
-    case CommandedApplication.dispatch(%EditCardText{
-           retro_id: retro_id,
-           id: id,
-           author_id: author_id,
-           text: text
-         }) do
+    case CommandedApplication.dispatch(
+           %EditCardText{
+             retro_id: retro_id,
+             id: id,
+             author_id: author_id,
+             text: text
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -111,16 +122,19 @@ defmodule LittleRetro.Retros do
   @spec delete_card_by_id(retro_id :: String.t(), %{
           id: integer(),
           author_id: integer(),
-          column_id: Column.id()
+          column_id: integer()
         }) :: :ok | {:error, atom()}
 
   def delete_card_by_id(retro_id, %{id: id, author_id: author_id, column_id: column_id}) do
-    case CommandedApplication.dispatch(%DeleteCardById{
-           id: id,
-           author_id: author_id,
-           column_id: column_id,
-           retro_id: retro_id
-         }) do
+    case CommandedApplication.dispatch(
+           %DeleteCardById{
+             id: id,
+             author_id: author_id,
+             column_id: column_id,
+             retro_id: retro_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -130,11 +144,14 @@ defmodule LittleRetro.Retros do
           :ok | {:error, atom()}
 
   def change_phase(retro_id, %{phase: phase, user_id: user_id}) do
-    case CommandedApplication.dispatch(%ChangePhase{
-           retro_id: retro_id,
-           to: phase,
-           user_id: user_id
-         }) do
+    case CommandedApplication.dispatch(
+           %ChangePhase{
+             retro_id: retro_id,
+             to: phase,
+             user_id: user_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -142,59 +159,71 @@ defmodule LittleRetro.Retros do
 
   @spec group_cards(retro_id :: String.t(), %{
           user_id: integer(),
-          card_id: Card.id(),
-          onto: Card.id()
+          card_id: integer(),
+          onto: integer()
         }) :: :ok | {:error, atom()}
 
   def group_cards(retro_id, %{user_id: user_id, card_id: card_id, onto: onto}) do
-    case CommandedApplication.dispatch(%GroupCards{
-           retro_id: retro_id,
-           user_id: user_id,
-           card_id: card_id,
-           onto: onto
-         }) do
+    case CommandedApplication.dispatch(
+           %GroupCards{
+             retro_id: retro_id,
+             user_id: user_id,
+             card_id: card_id,
+             onto: onto
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
   end
 
-  @spec remove_card_from_group(retro_id :: String.t(), %{user_id: integer(), card_id: Card.id()}) ::
+  @spec remove_card_from_group(retro_id :: String.t(), %{user_id: integer(), card_id: integer()}) ::
           :ok | {:error, atom()}
 
   def remove_card_from_group(retro_id, %{user_id: user_id, card_id: card_id}) do
-    case CommandedApplication.dispatch(%RemoveCardFromGroup{
-           retro_id: retro_id,
-           user_id: user_id,
-           card_id: card_id
-         }) do
+    case CommandedApplication.dispatch(
+           %RemoveCardFromGroup{
+             retro_id: retro_id,
+             user_id: user_id,
+             card_id: card_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
   end
 
-  @spec vote_for_card(retro_id :: String.t(), %{user_id: integer(), card_id: Card.id()}) ::
+  @spec vote_for_card(retro_id :: String.t(), %{user_id: integer(), card_id: integer()}) ::
           :ok | {:error, atom()}
 
   def vote_for_card(retro_id, %{user_id: user_id, card_id: card_id}) do
-    case CommandedApplication.dispatch(%VoteForCard{
-           retro_id: retro_id,
-           user_id: user_id,
-           card_id: card_id
-         }) do
+    case CommandedApplication.dispatch(
+           %VoteForCard{
+             retro_id: retro_id,
+             user_id: user_id,
+             card_id: card_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
   end
 
-  @spec remove_vote_from_card(retro_id :: String.t(), %{user_id: integer(), card_id: Card.id()}) ::
+  @spec remove_vote_from_card(retro_id :: String.t(), %{user_id: integer(), card_id: integer()}) ::
           :ok | {:error, atom()}
 
   def remove_vote_from_card(retro_id, %{user_id: user_id, card_id: card_id}) do
-    case CommandedApplication.dispatch(%RemoveVoteFromCard{
-           retro_id: retro_id,
-           user_id: user_id,
-           card_id: card_id
-         }) do
+    case CommandedApplication.dispatch(
+           %RemoveVoteFromCard{
+             retro_id: retro_id,
+             user_id: user_id,
+             card_id: card_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -204,10 +233,13 @@ defmodule LittleRetro.Retros do
           :ok | {:error, atom()}
 
   def create_action_item(retro_id, %{author_id: author_id}) do
-    case CommandedApplication.dispatch(%CreateActionItem{
-           retro_id: retro_id,
-           author_id: author_id
-         }) do
+    case CommandedApplication.dispatch(
+           %CreateActionItem{
+             retro_id: retro_id,
+             author_id: author_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -221,12 +253,15 @@ defmodule LittleRetro.Retros do
           :ok | {:error, atom()}
 
   def edit_action_item_text(retro_id, %{id: id, author_id: author_id, text: text}) do
-    case CommandedApplication.dispatch(%EditActionItemText{
-           retro_id: retro_id,
-           author_id: author_id,
-           id: id,
-           text: text
-         }) do
+    case CommandedApplication.dispatch(
+           %EditActionItemText{
+             retro_id: retro_id,
+             author_id: author_id,
+             id: id,
+             text: text
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -236,11 +271,14 @@ defmodule LittleRetro.Retros do
           :ok | {:error, atom()}
 
   def remove_action_item(retro_id, %{id: id, author_id: author_id}) do
-    case CommandedApplication.dispatch(%RemoveActionItem{
-           retro_id: retro_id,
-           author_id: author_id,
-           id: id
-         }) do
+    case CommandedApplication.dispatch(
+           %RemoveActionItem{
+             retro_id: retro_id,
+             author_id: author_id,
+             id: id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -250,10 +288,13 @@ defmodule LittleRetro.Retros do
           :ok | {:error, atom()}
 
   def advance_discussion(retro_id, %{user_id: user_id}) do
-    case CommandedApplication.dispatch(%AdvanceDiscussion{
-           retro_id: retro_id,
-           user_id: user_id
-         }) do
+    case CommandedApplication.dispatch(
+           %AdvanceDiscussion{
+             retro_id: retro_id,
+             user_id: user_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end
@@ -263,10 +304,13 @@ defmodule LittleRetro.Retros do
           :ok | {:error, atom()}
 
   def move_discussion_back(retro_id, %{user_id: user_id}) do
-    case CommandedApplication.dispatch(%MoveDiscussionBack{
-           retro_id: retro_id,
-           user_id: user_id
-         }) do
+    case CommandedApplication.dispatch(
+           %MoveDiscussionBack{
+             retro_id: retro_id,
+             user_id: user_id
+           },
+           consistency: Application.get_env(:little_retro, :consistency)
+         ) do
       {:error, err} -> {:error, err}
       _ -> :ok
     end

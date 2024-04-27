@@ -17,10 +17,20 @@ defmodule LittleRetro.Application do
       # Start a worker by calling: LittleRetro.Worker.start_link(arg)
       # {LittleRetro.Worker, arg},
       LittleRetro.CommandedApplication,
-      LittleRetro.Retros.EventHandlers.RetroPubSub,
+      LittleRetro.EventHandlerSupervisor,
       # Start to serve requests, typically the last entry
       LittleRetroWeb.Endpoint
     ]
+
+    children =
+      if Application.get_env(:little_retro, :start_commanded) do
+        children
+      else
+        Enum.reject(
+          children,
+          &(&1 in [LittleRetro.EventHandlerSupervisor, LittleRetro.CommandedApplication])
+        )
+      end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

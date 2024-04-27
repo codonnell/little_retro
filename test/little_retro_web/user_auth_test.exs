@@ -1,5 +1,5 @@
 defmodule LittleRetroWeb.UserAuthTest do
-  use LittleRetroWeb.ConnCase, async: true
+  use LittleRetroWeb.ConnCase
 
   alias Phoenix.LiveView
   alias LittleRetro.Accounts

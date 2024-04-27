@@ -63,6 +63,10 @@ config :phoenix, :json_library, Jason
 
 config :little_retro, event_stores: [LittleRetro.EventStore]
 
+config :little_retro,
+  start_commanded: true,
+  consistency: :eventual
+
 # config/config.exs
 config :little_retro, LittleRetro.EventStore,
   column_data_type: "jsonb",

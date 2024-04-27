@@ -42,8 +42,8 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
   typedstruct do
     field :retro_id, String.t(), enforce: true
     field :moderator_id, integer(), enforce: true
-    field :columns, %{Column.id() => %Column{}}, enforce: true, default: %{}
-    field :column_order, [Column.id()], enforce: true, default: []
+    field :columns, %{integer() => %Column{}}, enforce: true, default: %{}
+    field :column_order, [integer()], enforce: true, default: []
     field :user_emails, [String.t()], enforce: true, default: []
     field :cards, %{Card.id() => %Card{}}, enforce: true, default: %{}
     field :groups, %{Card.id() => %{cards: [Card.id()]}}, enforce: true, default: %{}

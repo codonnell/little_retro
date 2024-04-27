@@ -1,5 +1,5 @@
 defmodule LittleRetroWeb.UserSettingsLiveTest do
-  use LittleRetroWeb.ConnCase, async: true
+  use LittleRetroWeb.ConnCase
 
   alias LittleRetro.Accounts
   import Phoenix.LiveViewTest

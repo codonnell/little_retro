@@ -1,5 +1,5 @@
 defmodule LittleRetroWeb.UserSessionControllerTest do
-  use LittleRetroWeb.ConnCase, async: true
+  use LittleRetroWeb.ConnCase
 
   import LittleRetro.AccountsFixtures
 

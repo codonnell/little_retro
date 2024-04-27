@@ -1,5 +1,5 @@
 defmodule LittleRetroWeb.ErrorJSONTest do
-  use LittleRetroWeb.ConnCase, async: true
+  use LittleRetroWeb.ConnCase
 
   test "renders 404" do
     assert LittleRetroWeb.ErrorJSON.render("404.json", %{}) == %{errors: %{detail: "Not Found"}}

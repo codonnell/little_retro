@@ -43,7 +43,8 @@
   - [x] Write action item UI
   - [x] Write action item liveview tests
 - [ ] See currently active retros on homepage
-  - [ ] Retro users projection
+  - [x] Retro users projection
+    - [x] Make whether projectors start configurable--manually start projector per test in test case so pid sees shared ecto sql sandbox (see https://github.com/commanded/commanded/issues/553)
   - [ ] Retro basic info projection
   - [ ] Get retros for user domain function
   - [ ] Retros for user UI

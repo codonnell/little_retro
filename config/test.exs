@@ -25,6 +25,11 @@ config :little_retro, LittleRetro.EventStore,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
+# We start commanded manually to make the SQL sandbox work
+config :little_retro,
+  start_commanded: false,
+  consistency: :strong
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :little_retro, LittleRetroWeb.Endpoint,
