@@ -31,6 +31,14 @@ defmodule LittleRetroWeb.RetroLive do
         )
       end
 
+    max_votes = round(:math.sqrt(Enum.count(retro.cards)))
+
+    assigns =
+      assign(assigns,
+        votes_remaining:
+          max_votes - Enum.count(Map.get(retro.votes_by_user_id, assigns.current_user.id, []))
+      )
+
     action_items =
       Map.keys(retro.action_items)
       |> Enum.sort()
@@ -47,8 +55,19 @@ defmodule LittleRetroWeb.RetroLive do
     <div class="grow flex flex-col">
       <RetroComponents.header is_moderator={@is_moderator} phase={@retro.phase} />
       <RetroUsers.retro_users_modal email_form={@email_form} user_emails={@retro.user_emails} />
+      <%= if @retro.phase == :vote do %>
+        <div class="text-center h-8 mt-4">
+          <span
+            :for={i <- 1..@votes_remaining}
+            :if={@votes_remaining > 0}
+            data-test={"remaining-vote-#{i}"}
+          >
+            <.icon name="hero-check-circle" class="h-8 w-8 text-blue-600" />
+          </span>
+        </div>
+      <% end %>
       <%= if @retro.phase in [:create_cards, :group_cards, :vote] do %>
-        <div class="flex mt-8 divide-x-2 grow h-full">
+        <div class={"flex #{if @retro.phase != :vote do "mt-8" else "mt-4" end} divide-x-2 grow h-full"}>
           <%= for column <- @retro.column_order |> Enum.map(& @retro.columns[&1]) do %>
             <div class="grow">
               <h3 class="text-xl font-bold text-center"><%= column.label %></h3>
