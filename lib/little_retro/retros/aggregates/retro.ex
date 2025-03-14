@@ -376,9 +376,9 @@ defmodule LittleRetro.Retros.Aggregates.Retro do
       phase: :create_cards,
       moderator_id: moderator_id,
       columns: %{
-        0 => %Column{id: 0, label: "Mad", cards: []},
-        1 => %Column{id: 1, label: "Sad", cards: []},
-        2 => %Column{id: 2, label: "Glad", cards: []}
+        0 => %Column{id: 0, label: "Start", cards: []},
+        1 => %Column{id: 1, label: "Stop", cards: []},
+        2 => %Column{id: 2, label: "Continue", cards: []}
       },
       column_order: [0, 1, 2],
       user_emails: [],
